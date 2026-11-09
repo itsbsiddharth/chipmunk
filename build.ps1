@@ -1,5 +1,6 @@
 # Builds Chipmunk into .\dist. Needs Windows 10/11 and the C# compiler from
 # "Build Tools for Visual Studio" (free). Nothing else is downloaded.
+param([string]$Out)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $fw = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319"
@@ -14,7 +15,7 @@ if (-not $csc) {
     throw "Couldn't find the C# compiler. Install 'Build Tools for Visual Studio' (C# workload), or use the prebuilt dist folder."
 }
 
-$dist = Join-Path $root 'dist'
+$dist = if ($Out) { $Out } else { Join-Path $root 'dist' }
 New-Item -ItemType Directory -Force $dist | Out-Null
 $icon = Join-Path $root 'assets\chipmunk.ico'
 $exe = Join-Path $dist 'Chipmunk.exe'
@@ -23,6 +24,7 @@ function Compile([bool]$withIcon) {
     $refs = @(
         'System.dll', 'System.Core.dll', 'System.Drawing.dll', 'System.Windows.Forms.dll',
         'System.Web.Extensions.dll', 'System.Xaml.dll', 'Microsoft.CSharp.dll',
+        'System.IO.Compression.dll', 'System.IO.Compression.FileSystem.dll',
         "$fw\WPF\PresentationCore.dll", "$fw\WPF\WindowsBase.dll",
         "$root\lib\Microsoft.Web.WebView2.Core.dll", "$root\lib\Microsoft.Web.WebView2.WinForms.dll"
     ) | ForEach-Object { "/r:$_" }

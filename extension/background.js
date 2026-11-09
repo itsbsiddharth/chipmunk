@@ -1,6 +1,8 @@
-import { add, readSelection, readPageText, fetchImage, screenshot, pageItem } from './chipmunk.js';
+import { add, readSelection, readPageText, fetchImage, screenshot, pageItem, readChat, saveChat, CHAT_URL_PATTERNS } from './chipmunk.js';
 
 const MENUS = [
+  { id: 'save-chat', title: 'Save this chat to Chipmunk', contexts: ['page', 'selection', 'image', 'link'], documentUrlPatterns: CHAT_URL_PATTERNS },
+  { id: 'sep', type: 'separator', contexts: ['page', 'selection', 'image', 'link'], documentUrlPatterns: CHAT_URL_PATTERNS },
   { id: 'selection', title: 'Add selection to Chipmunk', contexts: ['selection'] },
   { id: 'image', title: 'Add image to Chipmunk', contexts: ['image'] },
   { id: 'link', title: 'Add link to Chipmunk', contexts: ['link'] },
@@ -16,13 +18,13 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 /** Shows the result on the toolbar icon: a check, or a "!" with the reason in the tooltip. */
-async function flash(tab, reply) {
+async function flash(tab, reply, okTitle) {
   const ok = reply && reply.ok;
   const text = ok ? '✓' : '!';
   try {
     await chrome.action.setBadgeBackgroundColor({ color: ok ? '#2f7a4f' : '#b3372f', tabId: tab.id });
     await chrome.action.setBadgeText({ text, tabId: tab.id });
-    await chrome.action.setTitle({ title: ok ? `Added to “${reply.title || 'your draft'}” (${reply.count})` : (reply && reply.error) || 'Chipmunk', tabId: tab.id });
+    await chrome.action.setTitle({ title: ok ? (okTitle || `Added to “${reply.title || 'your draft'}” (${reply.count})`) : (reply && reply.error) || 'Chipmunk', tabId: tab.id });
   } catch { /* the tab may be gone */ }
   setTimeout(() => {
     chrome.action.setBadgeText({ text: '', tabId: tab.id }).catch(() => {});
@@ -57,6 +59,15 @@ export async function collect(kind, tab, info = {}) {
       const data = await screenshot(tab);
       return flash(tab, await add({ kind: 'image', data, screenshot: true, url: tab.url, title: tab.title, name: 'Screenshot of ' + (tab.title || 'page') }));
     }
+    case 'save-chat': {
+      // The whole conversation (prompts, replies and their images) goes to Past chats,
+      // where any part of it can be pulled into a draft later.
+      const chat = await readChat(tab);
+      if (chat.error) return flash(tab, { ok: false, error: chat.error });
+      const reply = await saveChat(chat);
+      if (reply.ok) reply.message = `Saved ${reply.turns} messages. Find them in Chipmunk under Past chats.`;
+      return flash(tab, reply, reply.ok ? `Saved this ${chat.name} chat to Chipmunk` : null);
+    }
     default:
       return { ok: false, error: 'Unknown action' };
   }
@@ -74,6 +85,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   if (!tab) return;
   if (command === 'add-selection') collect('selection', tab);
   else if (command === 'screenshot-tab') collect('shot', tab);
+  else if (command === 'save-chat') collect('save-chat', tab);
 });
 
 // The popup asks the worker to do the work so it survives the popup closing.

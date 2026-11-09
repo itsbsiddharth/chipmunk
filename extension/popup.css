@@ -25,6 +25,8 @@ header img { border-radius: 7px; }
 }
 #actions button:hover:not(:disabled) { background: var(--hover); }
 #actions button:disabled { opacity: .45; cursor: default; }
+#actions button.featured { background: var(--surface); border: 1px solid var(--line); margin-bottom: 4px; }
+#actions button.featured .i { background: var(--accent); border-color: var(--accent); color: #fff; }
 #actions .i { width: 30px; height: 30px; flex: none; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent); }
 #actions span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 #actions small { color: var(--ink-3); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

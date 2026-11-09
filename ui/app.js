@@ -85,7 +85,6 @@ const S = {
   d: null,
   target: null,
   collect: false,
-  listening: false,
   save: { state: 'saved', at: null, error: null },
   overlay: null,
   dragAttId: null,
@@ -96,7 +95,7 @@ const el = {
   title: $('#title'),
   editor: $('#editor'),
   doc: $('#doc'),
-  talk: $('#btn-talk'),
+  dictation: $('#dictation'),
   saveState: $('#save-state'),
   collectToggle: $('#collect-toggle'),
   collectLabel: $('#collect'),
@@ -104,6 +103,7 @@ const el = {
   atts: $('#attachments-section'),
   estimate: $('#estimate'),
   send: $('#btn-send'),
+  sendMore: $('#btn-send-more'),
   copyText: $('#btn-copy-text'),
   copyFiles: $('#btn-copy-files'),
   overlay: $('#overlay-root'),
@@ -192,7 +192,7 @@ async function openDraft(id, draft) {
 function renderAll() {
   renderSaveState();
   renderCollect();
-  renderTalk();
+  renderDictation();
   renderDraftParts();
 }
 
@@ -218,19 +218,16 @@ function renderCollect() {
   el.collectLabel.classList.toggle('on', !!S.collect);
 }
 
-function renderTalk() {
-  const on = S.listening;
-  el.talk.classList.toggle('on', on);
-  el.doc.classList.toggle('listening', on);
-  const external = S.settings.voiceEngine === 'app';
-  el.talk.replaceChildren(
-    icon('mic'),
-    h('span', { class: 'wave' }, h('i'), h('i'), h('i'), h('i')),
-    h('span', {}, on ? 'Listening…' : 'Talk'),
-    on ? null : h('kbd', {}, hk('talk')));
-  el.talk.title = external
-    ? `Puts your cursor here so your dictation app (${S.settings.dictationApp || 'Wispr Flow, Aqua…'}) types into the draft`
-    : 'Say your prompt out loud. Uses Windows voice typing; your words land in the draft.';
+// Chipmunk has no speech engine of its own: the dictation app you already use (Wispr Flow,
+// Superwhisper, Aqua, Windows voice typing) types straight into the editor. We just say how.
+function renderDictation() {
+  const d = S.settings.dictation || {};
+  el.dictation.replaceChildren(...[icon('mic'),
+    h('span', {}, d.app ? `${d.app}: ${d.hint}` : 'Dictate'),
+    d.app ? null : h('kbd', {}, d.hint || 'Win+H')].filter(Boolean));
+  el.dictation.title = d.app
+    ? `${d.app} is running. Click here, then ${d.hint} and talk: your words land in the draft.`
+    : 'Click here, then press Win+H to talk. Wispr Flow, Superwhisper and Aqua work here too.';
 }
 
 function renderWordCount() {
@@ -399,14 +396,15 @@ function renderAttachments() {
     h('div', { class: 'section-title' }, 'Collected', atts.length ? h('span', { class: 'count-pill' }, atts.length) : null),
     chipBtn('scissors', 'Snip', () => snip(), `Snip part of your screen into this draft (${hk('snip')})`),
     chipBtn('paperclip', 'Files', () => pickFiles(), 'Choose files to add'),
-    chipBtn('clipboard', 'Paste', () => addFromClipboard(), 'Add whatever you copied (Ctrl+Shift+V)')));
+    chipBtn('clipboard', 'Paste', () => addFromClipboard(), 'Add whatever you copied (Ctrl+Shift+V)'),
+    chipBtn('clock', 'Past chats', () => openHistory(), 'Reuse prompts, replies and images from earlier chats')));
 
   if (!atts.length) {
     sec.append(h('div', { class: 'empty' },
       h('img', { src: 'assets/chip.png', alt: '' }),
       h('div', {},
         h('div', { class: 'e-title' }, 'Nothing collected yet'),
-        h('div', { class: 'e-body' }, 'Snip, grab or drop screenshots, files, quotes and links. Chip carries them to your AI.'),
+        h('div', { class: 'e-body' }, 'Snip, grab or drop screenshots, files, quotes and links, or reuse pieces of past chats. Chip carries it all to your AI.'),
         h('div', { class: 'keys' },
           h('kbd', {}, hk('snip')), h('span', {}, 'Snip part of the screen'),
           h('kbd', {}, hk('grab')), h('span', {}, 'Grab what you highlighted'),
@@ -535,38 +533,6 @@ async function snip() {
   try { await Host.call('snip', { id: S.d.id }); } catch (e) { toast(e.message, 'error'); }
 }
 
-// Windows voice typing doesn't report when it stops, so "listening" follows the words:
-// it ends once dictated text stops arriving, or when Talk is pressed again.
-const voice = { started: 0, lastInput: 0, timer: null };
-
-function voiceStarted() {
-  voice.started = Date.now();
-  voice.lastInput = 0;
-  clearInterval(voice.timer);
-  voice.timer = setInterval(() => {
-    if (!S.listening) { clearInterval(voice.timer); return; }
-    const now = Date.now();
-    if ((voice.lastInput && now - voice.lastInput > 7000) || (!voice.lastInput && now - voice.started > 20000)) voiceStopped(true);
-  }, 500);
-}
-
-function voiceStopped(tellHost) {
-  clearInterval(voice.timer);
-  S.listening = false;
-  renderTalk();
-  if (tellHost) Host.call('voiceDone').catch(() => {});
-}
-
-async function talk() {
-  if (S.listening) {
-    voiceStopped(false);
-    try { await Host.call('talk', { stop: true }); } catch (e) { toast(e.message, 'error'); }
-    return;
-  }
-  focusEditorEnd();
-  try { await Host.call('talk', {}); } catch (e) { toast(e.message, 'error'); }
-}
-
 async function pickFiles() {
   try {
     const d = await Host.call('pickFiles', { id: S.d.id });
@@ -632,16 +598,17 @@ function renderFooter() {
   const hasContent = (S.d.text || '').trim() || e.images || e.files || e.quotes || e.links;
   el.send.replaceChildren(icon(t && t.terminal ? 'terminal' : 'send'),
     h('span', { class: 'label' },
-      h('span', { class: 'l1' }, t ? `Send to ${t.app}` : 'Send to…'),
-      h('span', { class: 'l2' }, t ? t.title : 'Click into the app you want first')));
+      h('span', { class: 'l1' }, t ? `Send to ${t.label || t.app}` : 'Send to…'),
+      h('span', { class: 'l2' }, t ? targetSub(t, 'Ctrl+Enter') : 'Open ChatGPT, Claude or any app')));
   el.send.disabled = !hasContent;
-  el.send.title = t ? `Switch to "${t.title}" and paste everything (Ctrl+Enter)` : `Click into the app you want, then press ${hk('paste')}`;
+  el.sendMore.disabled = !hasContent;
+  el.send.title = t ? `Switch to "${t.title}" and paste everything (Ctrl+Enter)` : 'Pick where to send';
   el.copyFiles.disabled = !(e.images + e.files);
   el.copyText.disabled = !((S.d.text || '').trim() || e.quotes || e.links);
 }
 
 // ---------- sending ----------
-async function send(how) {
+async function send(how, hwnd) {
   await flushSaves();
   const missing = checklist().filter(i => !i.done);
   if (how === 'paste' && missing.length) {
@@ -654,10 +621,43 @@ async function send(how) {
     if (!ok) return;
   }
   try {
-    const r = await Host.call('send', { id: S.d.id, how });
+    const r = await Host.call('send', { id: S.d.id, how, hwnd: hwnd || null });
     if (r && r.draft) applyDraft(r.draft);
     if (r && r.message && how !== 'paste') toast(r.message);
   } catch (e) { toast(e.message, 'error'); }
+}
+
+// The second line under a target: its window title, else the app it runs in.
+function targetSub(t, fallback) {
+  const name = t.label || t.app;
+  if (t.title && t.title !== name) return t.title;
+  return t.app && t.app !== name ? t.app : fallback;
+}
+
+// Every open window you could send to, AI apps first. One click switches there and pastes.
+async function openSendMenu() {
+  if (S.overlay && S.overlay.type === 'send-menu') return closeOverlay();
+  let targets = [];
+  try { targets = await Host.call('targets'); } catch (e) { toast(e.message, 'error'); return; }
+  const r = el.send.parentElement.getBoundingClientRect();
+  const row = (t) => h('button', { class: 'target', onclick: () => { closeOverlay(); send('paste', t.hwnd); } },
+    h('span', { class: 'target-icon' + (t.ai ? ' ai' : '') }, icon(t.terminal ? 'terminal' : t.ai ? 'send' : 'window')),
+    h('span', { class: 'target-text' },
+      h('span', { class: 't1' }, t.label || t.app),
+      h('span', { class: 't2' }, targetSub(t, t.terminal ? 'Terminal' : 'Desktop app'))),
+    S.target && S.target.hwnd === t.hwnd ? h('span', { class: 'target-default' }, 'Default') : null);
+  const ai = targets.filter(x => x.ai), other = targets.filter(x => !x.ai);
+  const menu = h('div', { class: 'menu send-menu', role: 'menu', style: { bottom: (window.innerHeight - r.top + 6) + 'px', left: r.left + 'px', right: (window.innerWidth - r.right) + 'px' } },
+    ai.length ? h('div', { class: 'menu-label' }, 'AI apps') : null,
+    ai.map(row),
+    other.length ? h('div', { class: 'menu-label' }, ai.length ? 'Other windows' : 'Recent windows') : null,
+    other.map(row),
+    targets.length ? null : h('div', { class: 'menu-empty' }, 'Open ChatGPT, Claude, Codex, Antigravity or any app and it shows up here.'),
+    h('div', { class: 'menu-hint' }, 'Or press ', h('kbd', {}, hk('paste')), ' in any app'));
+  showOverlay('send-menu', [h('div', { class: 'scrim', style: { background: 'transparent' }, onclick: closeOverlay }), menu]);
+  el.sendMore.classList.add('active');
+  const first = menu.querySelector('.target');
+  if (first) first.focus();
 }
 
 // ---------- overlays ----------
@@ -665,7 +665,7 @@ function closeOverlay() {
   if (S.overlay && S.overlay.onClose) S.overlay.onClose();
   S.overlay = null;
   el.overlay.replaceChildren();
-  document.querySelectorAll('.icon-btn.active').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.icon-btn.active, #btn-send-more.active').forEach(b => b.classList.remove('active'));
 }
 
 function showOverlay(type, nodes, extra = {}) {
@@ -690,9 +690,9 @@ function openWelcome() {
     h('div', { class: 'w-hero' }, h('img', { src: 'assets/chip.png', alt: '' }), h('h3', {}, 'Meet Chip.')),
     h('div', { class: 'w-body' },
       h('p', { class: 'w-lede' }, 'Your AI is only as good as the context you give it. Chipmunk gathers it from anywhere and hands it over in one go.'),
-      step(1, 'Collect', h('span', {}, 'Talk ', h('kbd', {}, hk('talk')), ', snip ', h('kbd', {}, hk('snip')), ', grab a selection ', h('kbd', {}, hk('grab')), ', or drop anything on Chip.')),
-      step(2, 'Shape it', 'Everything lands in one draft that saves as you type and never gets lost.'),
-      step(3, 'Send', h('span', {}, 'Click into ChatGPT, Claude, Gemini or Claude Code and press ', h('kbd', {}, hk('paste')), '. Every screenshot, file and word goes in.')),
+      step(1, 'Collect', h('span', {}, 'Snip ', h('kbd', {}, hk('snip')), ', grab a selection ', h('kbd', {}, hk('grab')), ', drop anything on Chip, or reuse pieces of past chats.')),
+      step(2, 'Shape it', 'Type or dictate your prompt. Everything lands in one draft that saves as you go.'),
+      step(3, 'Send', h('span', {}, 'Pick ChatGPT, Claude, Codex, Antigravity or any app, or press ', h('kbd', {}, hk('paste')), ' wherever you are. Every screenshot, file and word goes in.')),
       h('div', { class: 'w-foot' },
         h('label', { class: 'switch-label' }, startup, h('span', { class: 'switch' }), 'Start with Windows'),
         h('div', { class: 'row-buttons' },
@@ -724,7 +724,7 @@ async function openDrafts() {
     h('div', { class: 'search' }, icon('search'), search),
     body,
     h('div', { class: 'panel-foot' },
-      h('button', { class: 'btn', style: { flex: 1 }, onclick: () => openImport() }, icon('inbox'), 'Bring back a Claude Code prompt'),
+      h('button', { class: 'btn', style: { flex: 1 }, onclick: () => openHistory() }, icon('clock'), 'Past chats'),
       h('button', { class: 'btn', title: 'Open the drafts folder', 'aria-label': 'Open drafts folder', onclick: () => Host.call('openDataFolder') }, icon('folder'))));
   showOverlay('drafts', [h('div', { class: 'scrim', onclick: closeOverlay }), drawer]);
   $('#btn-drafts').classList.add('active');
@@ -836,7 +836,7 @@ function openMenu(anchor) {
       toast('Made a copy. The original is unchanged.');
     }),
     item('clock', 'Version history', () => openVersions()),
-    item('inbox', 'Bring back a Claude Code prompt', () => openImport()),
+    item('inbox', 'Past chats', () => openHistory()),
     item('folder', 'Show in folder', () => Host.call('revealDraft', { id: S.d.id })),
     item(S.d.status === 'sent' ? 'restore' : 'check', S.d.status === 'sent' ? 'Mark as in progress' : 'Mark as sent', async () => {
       applyDraft(await Host.call('updateDraft', { id: S.d.id, patch: { status: S.d.status === 'sent' ? 'draft' : 'sent' } }));
@@ -925,83 +925,278 @@ async function openVersions() {
   showOverlay('versions', [h('div', { class: 'scrim', onclick: closeOverlay }), sheet]);
 }
 
-// ----- import from Claude Code -----
-async function openImport() {
-  const body = h('div', { class: 'panel-body' }, h('div', { class: 'list-empty' }, 'Reading your Claude Code history…'));
-  const search = h('input', { placeholder: 'Search past sessions', 'aria-label': 'Search sessions' });
-  const titleEl = h('span', {}, 'Bring back a prompt');
-  const back = h('button', { class: 'icon-btn', 'aria-label': 'Back', style: { display: 'none' } }, icon('chevronLeft'));
-  const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-label': 'Import from Claude Code' },
-    h('div', { class: 'panel-head' }, back, h('h2', {}, titleEl),
-      h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: closeOverlay }, icon('x'))),
-    h('div', { class: 'search' }, icon('search'), search),
-    body);
-  showOverlay('import', [h('div', { class: 'scrim', onclick: closeOverlay }), sheet]);
+// ----- past chats -----
+// Every chat in one place: Claude Code, Codex and Antigravity read straight from this PC;
+// ChatGPT, Claude and Gemini chats saved with the browser extension or imported from a data
+// export. Pick any prompts, replies or images, from one chat or several, and add them to a draft.
+const HISTORY_HELP = {
+  chatgpt: {
+    title: 'Bring your ChatGPT chats here',
+    steps: [
+      ['Save a chat', 'Open it on chatgpt.com, click the Chipmunk extension and choose Save this chat.'],
+      ['Use the ChatGPT app?', 'It keeps chats online, not on your PC. Open the same chat on chatgpt.com (it\'s synced) and save it there.'],
+      ['Or bring everything', 'In ChatGPT: Settings → Data controls → Export data. Then import the .zip you get by email.'],
+    ],
+    importable: true,
+  },
+  claude: {
+    title: 'Bring your Claude chats here',
+    steps: [
+      ['Save a chat', 'Open it on claude.ai, click the Chipmunk extension and choose Save this chat.'],
+      ['Or bring everything', 'In Claude: Settings → Privacy → Export data. Then import the .zip you get by email.'],
+    ],
+    importable: true,
+  },
+  gemini: {
+    title: 'Bring your Gemini chats here',
+    steps: [['Save a chat', 'Open it on gemini.google.com, click the Chipmunk extension and choose Save this chat.']],
+  },
+};
 
+let historySource = null;
+
+async function openHistory(startSource) {
+  if (S.overlay && S.overlay.type === 'history') return;
+  await flushSaves();
+  const titleEl = h('span', {}, 'Past chats');
+  const back = h('button', { class: 'icon-btn', 'aria-label': 'Back', title: 'All chats', style: { display: 'none' } }, icon('chevronLeft'));
+  const headExtra = h('span', { class: 'head-extra' });
+  const tabs = h('div', { class: 'source-tabs', role: 'tablist', 'aria-label': 'Where the chats come from' });
+  const search = h('input', { placeholder: 'Search chats', 'aria-label': 'Search' });
+  const searchBox = h('div', { class: 'search' }, icon('search'), search);
+  const body = h('div', { class: 'panel-body' });
+  const foot = h('div', { class: 'panel-foot history-foot', style: { display: 'none' } });
+  const sheet = h('div', { class: 'sheet history', role: 'dialog', 'aria-label': 'Past chats' },
+    h('div', { class: 'panel-head' }, back, h('h2', {}, titleEl), headExtra,
+      h('button', { class: 'icon-btn', 'aria-label': 'Close', title: 'Close (Esc)', onclick: closeOverlay }, icon('x'))),
+    tabs, searchBox, body, foot);
+  showOverlay('history', [h('div', { class: 'scrim', onclick: closeOverlay }), sheet]);
+  const ov = S.overlay;
+
+  let sources = [];
   let sessions = [];
-  try { sessions = await Host.call('importSessions'); } catch (e) { body.replaceChildren(h('div', { class: 'list-empty' }, e.message)); return; }
+  let source = startSource || historySource;
+  let view = 'list';
+  let onSearch = () => {};
+  search.addEventListener('input', () => onSearch());
 
-  const drawSessions = () => {
+  const loadSources = async () => {
+    sources = await Host.call('historySources');
+    if (!sources.find(s => s.id === source)) source = sources[0].id;
+  };
+  const current = () => sources.find(s => s.id === source) || sources[0];
+
+  const drawTabs = () => {
+    tabs.replaceChildren(...sources.map(s => h('button', {
+      class: 'source-tab' + (s.id === source ? ' on' : ''), role: 'tab', 'aria-selected': String(s.id === source),
+      onclick: () => { if (s.id === source) return; source = historySource = s.id; search.value = ''; showList(); },
+    }, s.name, s.count > 0 ? h('span', { class: 'n' }, s.count) : null)));
+  };
+
+  const importExport = async (btn) => {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await Host.call('historyImport');
+      if (r) {
+        source = historySource = r.source;
+        await loadSources();
+        toast(`Imported ${plural(r.chats, 'chat')}${r.images ? ` with ${plural(r.images, 'image')}` : ''}`);
+        showList();
+      }
+    } catch (e) { toast(e.message, 'error'); }
+    if (btn) btn.disabled = false;
+  };
+
+  const helpCard = (src, compact) => {
+    const help = HISTORY_HELP[src.id];
+    if (!help) return null;
+    if (compact) {
+      return h('div', { class: 'history-hint' },
+        h('span', {}, icon('globe'), `Save more from ${src.name} with the browser extension.`),
+        help.importable ? h('button', { class: 'chip-btn', onclick: (e) => importExport(e.currentTarget) }, icon('upload'), 'Import export') : null);
+    }
+    return h('div', { class: 'history-empty' },
+      h('img', { src: 'assets/chip.png', alt: '' }),
+      h('div', { class: 'he-title' }, help.title),
+      h('ol', { class: 'he-steps' }, help.steps.map(([b, s]) => h('li', {}, h('b', {}, b), h('span', {}, s)))),
+      h('div', { class: 'row-buttons' },
+        help.importable ? h('button', { class: 'btn primary', style: { flex: 'none' }, onclick: (e) => importExport(e.currentTarget) }, icon('upload'), 'Import export (.zip)') : null,
+        h('button', { class: 'btn', onclick: () => { closeOverlay(); openSettings('browser'); } }, icon('globe'), 'Set up the extension')));
+  };
+
+  const showList = async () => {
+    view = 'list';
     back.style.display = 'none';
-    titleEl.textContent = 'Bring back a prompt';
-    search.parentElement.style.display = '';
+    headExtra.replaceChildren();
+    titleEl.textContent = 'Past chats';
+    tabs.style.display = '';
+    searchBox.style.display = '';
+    search.placeholder = 'Search chats';
+    foot.style.display = 'none';
+    onSearch = drawList;
+    drawTabs();
+    const src = current();
+    body.replaceChildren(h('div', { class: 'list-empty' }, `Reading ${src.name}…`));
+    let list;
+    try { list = await Host.call('historySessions', { source: src.id }); }
+    catch (e) { if (source === src.id) body.replaceChildren(h('div', { class: 'list-empty' }, e.message)); return; }
+    if (source !== src.id || view !== 'list') return; // switched away while loading
+    sessions = list;
+    drawList();
+  };
+
+  const drawList = () => {
+    const src = current();
     const q = search.value.trim().toLowerCase();
-    const list = sessions.filter(s => !q || (s.title + ' ' + s.project + ' ' + (s.search || '')).toLowerCase().includes(q));
+    const list = sessions.filter(s => !q || `${s.title} ${s.sub || ''} ${s.search || ''}`.toLowerCase().includes(q));
     body.replaceChildren();
-    if (!sessions.length) { body.append(h('div', { class: 'list-empty' }, 'No Claude Code sessions found on this PC.')); return; }
-    if (!list.length) { body.append(h('div', { class: 'list-empty' }, 'No sessions match.')); return; }
-    body.append(h('div', { class: 'muted', style: { fontSize: '12px', padding: '0 4px 10px' } }, 'Pick a Claude Code session, then a prompt. It comes back as a draft with its screenshots and the files it mentioned.'));
-    for (const s of list) {
-      body.append(h('button', { class: 'session-item', onclick: () => drawPrompts(s) },
-        h('span', { class: 'si-title' }, s.title),
+    if (!sessions.length) {
+      body.append(helpCard(src, false) || h('div', { class: 'list-empty' }, `No ${src.name} sessions on this PC yet.`));
+      return;
+    }
+    const hint = src.local ? null : helpCard(src, true);
+    if (hint) body.append(hint);
+    if (!list.length) { body.append(h('div', { class: 'list-empty' }, 'No chats match.')); return; }
+    for (const s of list.slice(0, 400)) {
+      body.append(h('button', { class: 'session-item', onclick: () => showChat(s) },
+        h('span', { class: 'si-title' }, s.title || 'Untitled chat'),
         h('span', { class: 'si-meta' },
-          h('span', {}, s.project),
+          s.sub ? h('span', { class: 'si-sub' }, s.sub) : null,
           h('span', {}, ago(s.updated)),
-          h('span', {}, plural(s.promptCount, 'prompt')),
-          s.imageCount ? h('span', { class: 'img-count' }, icon('image'), s.imageCount) : null)));
+          s.turns > 0 ? h('span', {}, plural(s.turns, 'prompt')) : null,
+          s.images > 0 ? h('span', { class: 'img-count' }, icon('image'), s.images) : null)));
     }
   };
 
-  const drawPrompts = async (s) => {
+  const showChat = async (s) => {
+    view = 'chat';
+    const src = current();
     back.style.display = '';
-    back.onclick = drawSessions;
-    titleEl.textContent = s.title;
-    search.parentElement.style.display = 'none';
-    body.replaceChildren(h('div', { class: 'list-empty' }, 'Loading prompts…'));
-    let prompts = [];
-    try { prompts = await Host.call('importPrompts', { path: s.path }); } catch (e) { body.replaceChildren(h('div', { class: 'list-empty' }, e.message)); return; }
-    body.replaceChildren();
-    for (const p of prompts.slice().reverse()) {
-      body.append(h('div', { class: 'prompt-item' },
-        h('div', { class: 'pi-meta' }, h('span', {}, new Date(p.time).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })),
-          p.imageCount ? h('span', { class: 'img-count' }, icon('image'), plural(p.imageCount, 'image')) : null),
-        h('div', { class: 'pi-text' }, p.text || '(images only)'),
-        h('div', { class: 'pi-foot' },
-          h('div', { class: 'pi-thumbs' }, (p.thumbs || []).map(u => h('img', { src: u, alt: '' }))),
-          h('button', { class: 'btn', onclick: async (e) => {
-            const btn = e.currentTarget;
-            btn.disabled = true;
-            try {
-              const d = await Host.call('importPrompt', { path: s.path, index: p.index, title: s.title });
-              closeOverlay();
-              await openDraft(d.id, d);
-              const files = d.attachments.filter(x => x.kind === 'file').length;
-              const bits = [p.imageCount ? plural(p.imageCount, 'image') : null, files ? plural(files, 'file') + ' it mentioned' : null].filter(Boolean);
-              toast(`Brought back into a new draft${bits.length ? ' with ' + bits.join(' and ') : ''}`);
-            } catch (err) { toast(err.message, 'error'); btn.disabled = false; }
-          } }, icon('inbox'), 'Open as draft'))));
+    back.onclick = () => { view = 'list'; showListCached(); };
+    titleEl.textContent = s.title || 'Untitled chat';
+    tabs.style.display = 'none';
+    search.value = '';
+    search.placeholder = 'Search this chat';
+    headExtra.replaceChildren();
+    body.replaceChildren(h('div', { class: 'list-empty' }, 'Opening chat…'));
+    let conv;
+    try { conv = await Host.call('historyConversation', { source: src.id, sessionId: s.id }); }
+    catch (e) { body.replaceChildren(h('div', { class: 'list-empty' }, e.message)); return; }
+    if (view !== 'chat') return;
+
+    if (!src.local) {
+      const del = h('button', { class: 'icon-btn', title: 'Remove this saved chat from Chipmunk', 'aria-label': 'Remove saved chat' }, icon('trash'));
+      let armed = false;
+      del.onclick = async () => {
+        if (!armed) { armed = true; del.classList.add('confirm'); del.replaceChildren(h('span', {}, 'Remove?')); setTimeout(() => { armed = false; del.classList.remove('confirm'); del.replaceChildren(icon('trash')); }, 3000); return; }
+        try {
+          await Host.call('historyDelete', { source: src.id, sessionId: s.id });
+          await loadSources();
+          toast('Removed from Past chats. The chat itself is untouched.');
+          showList();
+        } catch (e) { toast(e.message, 'error'); }
+      };
+      headExtra.append(del);
     }
+
+    const picked = new Map();
+    const turns = conv.turns || [];
+    const userTurns = turns.filter(t => t.role === 'user' && t.text.trim());
+    const imageKeys = turns.flatMap(t => (t.images || []).map(i => [`i${t.index}.${i.index}`, { kind: 'image', turn: t.index, image: i.index }]));
+
+    const count = h('span', { class: 'pick-count' });
+    const addBtn = h('button', { class: 'btn primary', style: { flex: 'none' } }, icon('plus'), 'Add to draft');
+    const newBtn = h('button', { class: 'btn', title: 'Start a new draft with what you picked' }, 'New draft');
+    const updateFoot = () => {
+      const n = picked.size;
+      const imgs = [...picked.values()].filter(p => p.kind === 'image').length;
+      count.textContent = n ? [n - imgs ? plural(n - imgs, 'message') : null, imgs ? plural(imgs, 'image') : null].filter(Boolean).join(' + ') + ' picked' : 'Pick prompts, replies or images';
+      addBtn.disabled = newBtn.disabled = !n;
+      body.querySelectorAll('[data-key]').forEach(n2 => n2.classList.toggle('picked', picked.has(n2.dataset.key)));
+    };
+    const toggle = (key, item) => { if (picked.has(key)) picked.delete(key); else picked.set(key, item); updateFoot(); };
+
+    const add = async (mode) => {
+      addBtn.disabled = newBtn.disabled = true;
+      try {
+        const r = await Host.call('historyAdd', { source: src.id, sessionId: s.id, items: [...picked.values()], mode });
+        if (mode === 'new') await openDraft(r.draft.id, r.draft);
+        else { S.d.text = r.draft.text; applyDraft(r.draft, { replaceText: true }); }
+        picked.clear();
+        updateFoot();
+        toast(`Added to “${r.draft.title || 'your draft'}”. Pick more from any chat, or close when you're done.`);
+      } catch (e) { toast(e.message, 'error'); updateFoot(); }
+    };
+    addBtn.onclick = () => add('add');
+    newBtn.onclick = () => add('new');
+
+    const quick = h('div', { class: 'quick-picks' },
+      userTurns.length ? h('button', { class: 'chip-btn', onclick: () => { userTurns.forEach(t => picked.set(`t${t.index}`, { kind: 'text', turn: t.index })); updateFoot(); } }, icon('quote'), `All my prompts (${userTurns.length})`) : null,
+      imageKeys.length ? h('button', { class: 'chip-btn', onclick: () => { imageKeys.forEach(([k, v]) => picked.set(k, v)); updateFoot(); } }, icon('image'), `All images (${imageKeys.length})`) : null,
+      h('button', { class: 'chip-btn', onclick: () => { picked.clear(); updateFoot(); } }, 'Clear'));
+
+    const turnCard = (t) => {
+      const mine = t.role === 'user';
+      const key = `t${t.index}`;
+      const long = t.text.length > (mine ? 600 : 360);
+      const text = h('div', { class: 'turn-text' + (long ? ' clamped' : '') }, t.text || (mine ? '(images only)' : ''));
+      const card = h('div', { class: 'turn ' + (mine ? 'mine' : 'reply'), 'data-search': t.text.toLowerCase() },
+        h('div', { class: 'turn-head' },
+          h('span', { class: 'who' }, mine ? 'You' : conv.sourceName),
+          t.time ? h('span', { class: 'when' }, new Date(t.time).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })) : null,
+          long ? h('button', { class: 'link-btn', onclick: (e) => { const c = text.classList.toggle('clamped'); e.currentTarget.textContent = c ? 'Show all' : 'Show less'; } }, 'Show all') : null),
+        t.text.trim() ? h('button', {
+          class: 'turn-body', 'data-key': key, 'aria-pressed': 'false',
+          title: mine ? 'Add this prompt to your draft text' : 'Add this reply as a quote',
+          onclick: (e) => { if (window.getSelection().toString()) return; toggle(key, { kind: 'text', turn: t.index }); },
+        }, h('span', { class: 'tick' }, icon('check')), text) : null,
+        t.images && t.images.length ? h('div', { class: 'turn-images' }, t.images.map(i => {
+          const k = `i${t.index}.${i.index}`;
+          return h('button', { class: 'turn-img', 'data-key': k, title: 'Add this image', onclick: () => toggle(k, { kind: 'image', turn: t.index, image: i.index }) },
+            i.thumb ? h('img', { src: i.thumb, alt: '' }) : icon('image'), h('span', { class: 'tick' }, icon('check')));
+        })) : null);
+      return card;
+    };
+
+    const list = h('div', { class: 'turns' }, turns.map(turnCard));
+    body.replaceChildren(quick, list);
+    if (!turns.length) body.append(h('div', { class: 'list-empty' }, 'This chat has no messages Chipmunk can read.'));
+    onSearch = () => {
+      const q = search.value.trim().toLowerCase();
+      list.querySelectorAll('.turn').forEach(c => { c.style.display = !q || c.dataset.search.includes(q) ? '' : 'none'; });
+    };
+    foot.replaceChildren(count, h('span', { style: { flex: 1 } }), newBtn, addBtn);
+    foot.style.display = '';
+    updateFoot();
+    body.scrollTop = 0;
   };
 
-  search.addEventListener('input', drawSessions);
-  drawSessions();
+  const showListCached = () => {
+    back.style.display = 'none';
+    headExtra.replaceChildren();
+    titleEl.textContent = 'Past chats';
+    tabs.style.display = '';
+    search.value = '';
+    search.placeholder = 'Search chats';
+    foot.style.display = 'none';
+    onSearch = drawList;
+    drawTabs();
+    drawList();
+  };
+
+  // Esc in a chat goes back to the list; Esc in the list closes Past chats.
+  ov.onEscape = () => { if (view !== 'chat') return false; back.onclick(); return true; };
+  ov.refresh = async () => { await loadSources(); if (view === 'list') showList(); else drawTabs(); };
+
+  try { await loadSources(); }
+  catch (e) { body.replaceChildren(h('div', { class: 'list-empty' }, e.message)); return; }
+  showList();
   search.focus();
 }
 
 // ----- settings -----
 const HOTKEY_LABELS = {
   toggle: ['Open or hide Chipmunk', 'From any app'],
-  talk: ['Talk', 'Say your prompt into the draft'],
   snip: ['Snip', 'Select part of the screen'],
   grab: ['Grab selection', 'Adds what you highlighted'],
   paste: ['Send', 'Pastes the draft into the app you\'re in'],
@@ -1084,20 +1279,19 @@ async function openSettings(focus) {
     body.replaceChildren(
       group('command', 'Shortcuts', ...Object.keys(HOTKEY_LABELS).map(hotkeyRow)),
 
-      group('mic', 'Voice',
-        selectRow('Talk with', st.voiceEngine === 'app'
-          ? `Talk puts your cursor in the draft; your dictation app does the listening.${app ? ` ${app} is running.` : ''}`
-          : 'Windows voice typing: built in, free, works in many languages.',
-          st.voiceEngine, [['windows', 'Windows voice typing'], ['app', app ? `${app}` : 'My dictation app']], v => save({ voiceEngine: v })),
+      group('mic', 'Dictation',
         h('div', { class: 'setting-row' },
-          h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Try it'), h('div', { class: 'sr-sub' }, `Press ${hk('talk')} anywhere, or the Talk button under your prompt.`)),
-          h('button', { class: 'btn', onclick: () => { closeOverlay(); talk(); } }, icon('mic'), 'Talk now'))),
+          h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, app ? `${app} works here` : 'Use the dictation app you already have'),
+            h('div', { class: 'sr-sub' }, app
+              ? `Click in your prompt and ${(st.dictation || {}).hint || 'use its shortcut'}. ${app} types straight into the draft.`
+              : 'Wispr Flow, Superwhisper, Aqua and Windows voice typing (Win+H) all type straight into your draft. Click in the prompt and talk.')),
+          app ? h('span', { class: 'status-pill ok' }, icon('check'), 'Detected') : h('span', { class: 'status-pill idle' }, 'Win+H'))),
 
       group('globe', 'Browser extension',
         h('div', { class: 'setting-row col' },
           h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' } },
             h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Collect from any website'),
-              h('div', { class: 'sr-sub' }, 'Right-click a selection, image, link or page and choose "Add to Chipmunk". Works in Chrome, Edge and Brave.')),
+              h('div', { class: 'sr-sub' }, 'Right-click a selection, image, link or page and choose "Add to Chipmunk". On ChatGPT, Claude and Gemini, "Save this chat" keeps the whole conversation for Past chats. Works in Chrome, Edge and Brave.')),
             st.usedExtension ? h('span', { class: 'status-pill ok' }, icon('check'), 'Connected') : h('span', { class: 'status-pill idle' }, 'Not set up')),
           h('ol', { class: 'steps' },
             h('li', {}, 'Open ', h('b', {}, 'chrome://extensions'), ' (or ', h('b', {}, 'edge://extensions'), ') and turn on ', h('b', {}, 'Developer mode'), '.'),
@@ -1116,11 +1310,12 @@ async function openSettings(focus) {
           agent ? codeBox(agent.claude) : null,
           agent ? h('div', { class: 'sr-sub', style: { fontWeight: 600 } }, 'Codex') : null,
           agent ? codeBox(agent.codex) : null,
-          agent ? h('div', { class: 'sr-sub', style: { fontWeight: 600 } }, 'Cursor, Claude Desktop and other MCP apps') : null,
+          agent ? h('div', { class: 'sr-sub', style: { fontWeight: 600 } }, 'Antigravity, Cursor, Claude Desktop and other MCP apps') : null,
           agent ? codeBox(agent.json) : null)),
 
       group('smile', 'Chip',
-        toggleRow('showPet', 'Show Chip on your desktop', 'Drop files, images, links or text on Chip to collect them. Its cheeks fill up as your draft does. Hides during fullscreen apps.')),
+        toggleRow('showPet', 'Show Chip on your desktop', 'Click Chip to send your draft to any open AI app. Drop files, images, links or text on it to collect them. Hides during fullscreen apps.'),
+        st.showPet ? toggleRow('petHints', 'Chip suggestions', 'Chip offers to paste your draft when you switch to an AI app, and to keep screenshots you take. One click, or ignore it.') : null),
 
       group('send', 'Sending',
         toggleRow('shrinkImages', 'Shrink huge screenshots', 'AI apps scale big images down anyway. This makes uploads faster.'),
@@ -1274,6 +1469,7 @@ document.addEventListener('keydown', (e) => {
     if (e.target.classList && e.target.classList.contains('hotkey-input')) return;
     e.preventDefault();
     if (ov === 'welcome') return;
+    if (ov && S.overlay.onEscape && S.overlay.onEscape()) return;
     if (ov) closeOverlay();
     else Host.call('hide');
     return;
@@ -1285,6 +1481,7 @@ document.addEventListener('keydown', (e) => {
   else if (k === 'n' && !e.shiftKey) { e.preventDefault(); closeOverlay(); newDraft(); }
   else if (k === 'k') { e.preventDefault(); openDrafts(); }
   else if (k === ',') { e.preventDefault(); openSettings(); }
+  else if (k === 'h' && e.shiftKey) { e.preventDefault(); openHistory(); }
   else if (k === 'v' && e.shiftKey) { e.preventDefault(); addFromClipboard(); }
   else if (k === 's') { e.preventDefault(); flushSaves().then(() => toast('Saved. It already was, by the way.')); }
 });
@@ -1303,10 +1500,9 @@ function bind() {
   $('#btn-new').addEventListener('click', () => { closeOverlay(); newDraft(); });
   $('#btn-more').addEventListener('click', (e) => openMenu(e.currentTarget));
   $('#btn-settings').addEventListener('click', () => openSettings());
-  el.talk.addEventListener('click', talk);
+  el.dictation.addEventListener('click', () => focusEditorEnd());
 
   el.editor.addEventListener('input', () => {
-    if (S.listening) voice.lastInput = Date.now();
     S.d.text = el.editor.value;
     autosize();
     setSave('saving');
@@ -1333,7 +1529,8 @@ function bind() {
     } catch (e) { toast(e.message, 'error'); }
   });
 
-  el.send.addEventListener('click', () => send('paste'));
+  el.send.addEventListener('click', () => (S.target ? send('paste') : openSendMenu()));
+  el.sendMore.addEventListener('click', openSendMenu);
   el.copyText.addEventListener('click', () => send('copyText'));
   el.copyFiles.addEventListener('click', () => send('copyFiles'));
   window.addEventListener('resize', autosize);
@@ -1345,10 +1542,7 @@ function bind() {
   Host.on('openDraft', (d) => openDraft(d.id, d));
   Host.on('toast', (t) => toast(t.text, t.kind));
   Host.on('collect', (on) => { S.collect = on; renderCollect(); });
-  Host.on('voice', (on) => {
-    if (on) { S.listening = true; renderTalk(); voiceStarted(); }
-    else voiceStopped(false);
-  });
+  Host.on('historyChanged', () => { if (S.overlay && S.overlay.type === 'history' && S.overlay.refresh) S.overlay.refresh(); });
   Host.on('target', (t) => { S.target = t; renderFooter(); });
   Host.on('settings', (st) => { S.settings = st; applyTheme(); renderAll(); });
   Host.on('focusEditorEnd', () => { closeOverlay(); focusEditorEnd(); });
@@ -1358,7 +1552,7 @@ function bind() {
   Host.on('showView', (v) => {
     if (v === 'settings') openSettings();
     else if (v === 'drafts') openDrafts();
-    else if (v === 'import') openImport();
+    else if (v === 'history' || v === 'import') openHistory();
   });
   Host.on('flush', async () => { await flushSaves(); Host.call('flushed'); });
 }
@@ -1372,6 +1566,7 @@ async function init() {
   S.collect = r.collect;
   applyTheme();
   await openDraft(r.current.id, r.current);
+  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('app').classList.remove('preload')));
   if (!S.settings.onboarded) openWelcome();
   else el.editor.focus();
 }

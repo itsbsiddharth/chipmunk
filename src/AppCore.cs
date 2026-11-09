@@ -57,7 +57,7 @@ namespace Chipmunk
         readonly PipeServer pipe;
         ToolStripMenuItem trayOpen, trayCollect, trayPet;
 
-        static readonly string[] HotkeyNames = { "toggle", "talk", "snip", "grab", "paste" };
+        static readonly string[] HotkeyNames = { "toggle", "snip", "grab", "paste" };
         bool hotkeysSuspended;
         bool collect;
         bool flushed;
@@ -72,13 +72,11 @@ namespace Chipmunk
         GrabState grab;
         string forceDraft;
         DateTime forceUntil;
-        DateTime listenStarted = DateTime.MinValue;
 
         readonly System.Windows.Forms.Timer fgTimer = new System.Windows.Forms.Timer { Interval = 250 };
         readonly System.Windows.Forms.Timer snipTimer = new System.Windows.Forms.Timer { Interval = 200 };
         readonly System.Windows.Forms.Timer grabTimer = new System.Windows.Forms.Timer { Interval = 60 };
         readonly System.Windows.Forms.Timer clipTimer = new System.Windows.Forms.Timer { Interval = 70 };
-        readonly System.Windows.Forms.Timer listenTimer = new System.Windows.Forms.Timer { Interval = 350 };
 
         static readonly HashSet<string> ShellClasses = new HashSet<string>
         {
@@ -138,8 +136,21 @@ namespace Chipmunk
             snipTimer.Tick += (s, e) => SnipTick();
             grabTimer.Tick += (s, e) => GrabTick();
             clipTimer.Tick += (s, e) => { clipTimer.Stop(); ProcessClipboard(); };
-            listenTimer.Tick += (s, e) => ListenTick();
             fgTimer.Start();
+
+            // Index past sessions once in the background, so Past chats opens instantly later.
+            var warm = new Thread(() =>
+            {
+                try
+                {
+                    Thread.Sleep(8000);
+                    ClaudeImport.Sessions();
+                    LocalAgents.CodexSessions();
+                    LocalAgents.AntigravitySessions();
+                }
+                catch (Exception e) { Log.Error("Warm history: " + e.Message); }
+            }) { IsBackground = true, Priority = ThreadPriority.Lowest };
+            warm.Start();
 
             ThreadPool.RegisterWaitForSingleObject(showEvent, (st, to) => { try { win.BeginInvoke((Action)ShowPanel); } catch { } }, null, -1, false);
 
@@ -199,7 +210,7 @@ namespace Chipmunk
             trayOpen = new ToolStripMenuItem("Open Chipmunk", null, (s, e) => ShowPanel()) { Font = new Font(SystemFonts.MenuFont, FontStyle.Bold) };
             menu.Items.Add(trayOpen);
             menu.Items.Add("New draft", null, (s, e) => { ShowPanel(); NewDraftFromOutside(); });
-            menu.Items.Add("Talk into draft", null, (s, e) => StartTalk());
+            menu.Items.Add("Past chats", null, (s, e) => ShowView("history"));
             menu.Items.Add("Snip into draft", null, (s, e) => StartSnip(Settings.currentDraft));
             trayCollect = new ToolStripMenuItem("Collect screenshots") { CheckOnClick = true };
             trayCollect.Click += (s, e) => SetCollect(trayCollect.Checked);
@@ -208,7 +219,7 @@ namespace Chipmunk
             trayPet.Click += (s, e) => SetPetVisible(trayPet.Checked);
             menu.Items.Add(trayPet);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Settings", null, (s, e) => { ShowPanel(); win.Emit("showView", "settings"); });
+            menu.Items.Add("Settings", null, (s, e) => ShowView("settings"));
             menu.Items.Add("Open drafts folder", null, (s, e) => OpenFolder(Store.Root));
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Quit Chipmunk", null, (s, e) => Quit());
@@ -285,8 +296,14 @@ namespace Chipmunk
             win.Activate();
             Native.Focus(win.Handle);
             panelWasLastForeground = true;
-            win.Emit("target", TargetDto(lastTarget));
+            win.Emit("target", TargetDto(DefaultTarget()));
             win.FocusPage();
+        }
+
+        public void ShowView(string view)
+        {
+            ShowPanel();
+            win.Emit("showView", view);
         }
 
         public void HidePanel()
@@ -299,11 +316,69 @@ namespace Chipmunk
         {
             var fg = Native.GetForegroundWindow();
             if (fg == IntPtr.Zero) return;
+            bool changed = fg != lastFgRaw;
+            lastFgRaw = fg;
+            if (!changed && ++quietTicks < 4) return;
+            quietTicks = 0;
             pet.SetSuppressed(IsFullscreen(fg));
             if (Native.Root(fg) == win.Handle) { panelWasLastForeground = true; return; }
             if (!IsExternal(fg)) return;
             panelWasLastForeground = false;
             SetTarget(fg);
+            var root = Native.Root(fg);
+            if (root != lastForeground)
+            {
+                lastForeground = root;
+                if (SnipProcesses.Contains(Native.ProcessName(root))) snipSeenAt = DateTime.UtcNow;
+                else OfferSend(root);
+            }
+        }
+
+        IntPtr lastForeground, lastFgRaw;
+        int quietTicks;
+        DateTime snipSeenAt = DateTime.MinValue, lastImageOffer = DateTime.MinValue;
+        readonly Dictionary<string, DateTime> sendOffers = new Dictionary<string, DateTime>();
+
+        /// <summary>You switched into ChatGPT, Claude, Codex... and your draft has something unsent:
+        /// Chip offers to paste it right there, so sending is one click instead of a trip to the panel.</summary>
+        void OfferSend(IntPtr h)
+        {
+            if (!pet.IsShowing || !Settings.petHints || snip != null || grab != null) return;
+            var info = Describe(h);
+            if (!(bool)info["ai"]) return;
+            var d = Current;
+            if (d == null || d.status == "sent") return;
+            int items = d.attachments.Count(a => a.include);
+            if (items == 0 && string.IsNullOrWhiteSpace(Store.ReadText(d))) return;
+            string key = d.id + "|" + h.ToInt64();
+            DateTime last;
+            if (sendOffers.TryGetValue(key, out last) && DateTime.UtcNow - last < TimeSpan.FromMinutes(15)) return;
+            sendOffers[key] = DateTime.UtcNow;
+            string what = items > 0 ? Plural(items, "item") + " ready" : "Draft ready";
+            pet.Say(what + " for " + info["label"] + ".", 6500, () => SendCurrentTo(h), "Click me to paste it in");
+        }
+
+        /// <summary>A screenshot or image just landed on the clipboard and Collect is off:
+        /// Chip offers to keep it, so you don't have to come back to the panel.</summary>
+        void OfferImage()
+        {
+            if (!pet.IsShowing || !Settings.petHints || PanelIsForeground()) return;
+            if (!Native.IsClipboardFormatAvailable(2) && !Native.IsClipboardFormatAvailable(8)) return; // CF_BITMAP / CF_DIB
+            if (DateTime.UtcNow - lastImageOffer < TimeSpan.FromSeconds(8)) return;
+            var c = ClipboardService.Read();
+            if (c.ImagePng == null || (c.Files != null && c.Files.Length > 0)) return;
+            lastImageOffer = DateTime.UtcNow;
+            bool shot = DateTime.UtcNow - snipSeenAt < TimeSpan.FromSeconds(20);
+            var png = c.ImagePng;
+            string source = shot ? "Screenshot" : "Copied" + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
+            var d = Current;
+            pet.Say((shot ? "Nice screenshot." : "Copied an image.") + " Keep it for " + Quote(d.title) + "?", 6500, () =>
+            {
+                var target = Store.Exists(d.id) ? Store.Get(d.id) : Current;
+                var a = Store.AddImage(target, png, "image/png", shot ? Store.ScreenshotName() : "Copied image " + DateTime.Now.ToString("h:mm tt", CultureInfo.CurrentCulture), source, null);
+                Collected(target);
+                pet.Say(a == null ? "Already have that one." : "Got it · " + Plural(target.attachments.Count(x => x.kind == "image"), "image") + " in " + Quote(target.title), 2600);
+            }, "Click to add it");
         }
 
         [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
@@ -332,7 +407,8 @@ namespace Chipmunk
         void SetTarget(IntPtr h)
         {
             lastTarget = Native.Root(h);
-            var dto = TargetDto(lastTarget);
+            NoteRecent(lastTarget);
+            var dto = TargetDto(DefaultTarget());
             string sig = dto == null ? "" : dto["app"] + "|" + dto["title"];
             if (sig != lastTargetSig)
             {
@@ -358,11 +434,7 @@ namespace Chipmunk
         Dictionary<string, object> TargetDto(IntPtr h)
         {
             if (h == IntPtr.Zero || !Native.IsWindow(h)) return null;
-            string app = FriendlyApp(h);
-            string title = Native.WindowTitle(h);
-            if (string.IsNullOrWhiteSpace(title)) title = app;
-            if (title.Length > 80) title = title.Substring(0, 78) + "…";
-            return new Dictionary<string, object> { { "app", app }, { "title", title }, { "terminal", IsTerminal(h) } };
+            return Describe(h);
         }
 
         string SourceLabel(IntPtr h)
@@ -380,7 +452,6 @@ namespace Chipmunk
         static readonly Dictionary<string, string[]> HotkeyFallbacks = new Dictionary<string, string[]>
         {
             { "toggle", new[] { "Win+Alt+P", "Ctrl+Shift+Alt+P" } },
-            { "talk", new[] { "Win+Alt+Space", "Ctrl+Shift+Space", "Win+Alt+T" } },
             { "snip", new[] { "Win+Alt+S", "Ctrl+Shift+Alt+S" } },
             { "grab", new[] { "Win+Alt+C", "Ctrl+Shift+Alt+C" } },
             { "paste", new[] { "Win+Alt+V", "Ctrl+Shift+Alt+V" } },
@@ -430,7 +501,6 @@ namespace Chipmunk
             switch (name)
             {
                 case "toggle": return "Open Chipmunk";
-                case "talk": return "Talk";
                 case "snip": return "Snip";
                 case "grab": return "Grab selection";
                 default: return "Send draft";
@@ -444,10 +514,9 @@ namespace Chipmunk
                 switch (id)
                 {
                     case 1: TogglePanel(); break;
-                    case 2: StartTalk(); break;
-                    case 3: StartSnip(Settings.currentDraft); break;
-                    case 4: StartGrab(); break;
-                    case 5: PasteHotkey(); break;
+                    case 2: StartSnip(Settings.currentDraft); break;
+                    case 3: StartGrab(); break;
+                    case 4: PasteHotkey(); break;
                 }
             }
             catch (Exception e)
@@ -462,6 +531,7 @@ namespace Chipmunk
         void Notify(string message, bool error = false)
         {
             if (PanelIsForeground()) win.Emit("toast", new Dictionary<string, object> { { "text", message }, { "kind", error ? "error" : null } });
+            else if (pet.IsShowing) pet.Say(message, error ? 5200 : 3400);
             else toast.Show(message, error);
         }
 
@@ -488,61 +558,128 @@ namespace Chipmunk
 
         static string Plural(int n, string word) { return n + " " + word + (n == 1 ? "" : "s"); }
 
-        // ---------------- capture: talk ----------------
+        // ---------------- dictation ----------------
+        // Chipmunk doesn't do its own speech-to-text: people already have a dictation app they
+        // like, and those type into whatever is focused, including Chipmunk's editor. We only
+        // detect which one is running so the panel can show its shortcut.
 
-        /// <summary>Opens the draft with the cursor at the end and starts dictation, so you can
-        /// talk your prompt while you keep snipping and grabbing.</summary>
-        public void StartTalk()
+        static readonly Dictionary<string, string> DictationHints = new Dictionary<string, string>
         {
-            Settings.usedVoice = true;
-            Settings.Save();
-            ShowPanel();
-            win.Emit("focusEditorEnd", null);
-            var t = new System.Windows.Forms.Timer { Interval = 260 };
-            t.Tick += (s, e) =>
-            {
-                t.Stop();
-                t.Dispose();
-                if (Settings.voiceEngine == "app")
-                {
-                    string app = RunningDictationApp();
-                    Notify(app != null
-                        ? "Your cursor is in the draft. Use " + app + " now (for Wispr Flow, hold Ctrl+Win)."
-                        : "Your cursor is in the draft. Start your dictation app now.");
-                    return;
-                }
-                Kbd.WaitModifiersUp(1500);
-                Kbd.Chord(Kbd.LWIN, 0x48); // Win+H: Windows voice typing
-                pet.SetMode(1);
-                listenStarted = DateTime.UtcNow;
-                listenTimer.Start();
-                win.Emit("voice", true);
-            };
-            t.Start();
-        }
+            { "Wispr Flow", "hold Ctrl+Win" }, { "Superwhisper", "use your Superwhisper shortcut" }, { "Aqua", "use your Aqua shortcut" },
+            { "Willow", "hold your Willow key" }, { "Spokenly", "use your Spokenly shortcut" }, { "VoiceInk", "use your VoiceInk shortcut" },
+        };
 
-        /// <summary>Safety net: the panel tells us when dictation stops (words stop arriving);
-        /// this only ends the "listening" pose if that never happens.</summary>
-        void ListenTick()
+        Dictionary<string, object> DictationDto()
         {
-            if ((DateTime.UtcNow - listenStarted).TotalSeconds > 90) EndListening();
-        }
-
-        void EndListening()
-        {
-            listenTimer.Stop();
-            pet.SetMode(0);
-            win.Emit("voice", false);
+            string app = RunningDictationApp();
+            string hint;
+            return app != null
+                ? new Dictionary<string, object> { { "app", app }, { "hint", DictationHints.TryGetValue(app, out hint) ? hint : "use its shortcut" } }
+                : new Dictionary<string, object> { { "app", null }, { "hint", "Win+H" } };
         }
 
         static string RunningDictationApp()
         {
             foreach (var name in DictationApps)
             {
-                try { if (Process.GetProcessesByName(name).Length > 0) return name.StartsWith("Wispr") ? "Wispr Flow" : name; }
+                try
+                {
+                    if (Process.GetProcessesByName(name).Length == 0) continue;
+                    if (name.StartsWith("Wispr")) return "Wispr Flow";
+                    if (name.StartsWith("Aqua")) return "Aqua";
+                    return name;
+                }
                 catch { }
             }
             return null;
+        }
+
+        // ---------------- where to send ----------------
+
+        readonly List<IntPtr> recentWindows = new List<IntPtr>();
+
+        void NoteRecent(IntPtr h)
+        {
+            recentWindows.Remove(h);
+            recentWindows.Insert(0, h);
+            if (recentWindows.Count > 30) recentWindows.RemoveAt(recentWindows.Count - 1);
+        }
+
+        static readonly Dictionary<string, string> AiApps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "ChatGPT", "ChatGPT" }, { "claude", "Claude" }, { "Codex", "Codex" }, { "Antigravity", "Antigravity" },
+            { "Cursor", "Cursor" }, { "Windsurf", "Windsurf" }, { "Code", "VS Code" }, { "Zed", "Zed" }, { "Kiro", "Kiro" },
+            { "Perplexity", "Perplexity" }, { "Copilot", "Copilot" }, { "M365Copilot", "Copilot" },
+        };
+        static readonly string[] BrowserProcesses = { "chrome", "msedge", "brave", "firefox", "opera", "vivaldi", "arc", "zen", "thorium" };
+        static readonly string[] WebAis = { "ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot", "Grok", "DeepSeek", "Le Chat", "Mistral", "Poe", "AI Studio", "NotebookLM", "Meta AI", "Kimi", "Qwen" };
+        static readonly string[] CliAis = { "Claude Code", "claude", "codex", "gemini", "aider", "opencode", "amp" };
+
+        /// <summary>Names a window for the "Send to" list; ai is true for AI apps and AI tabs.</summary>
+        Dictionary<string, object> Describe(IntPtr h)
+        {
+            string proc = Native.ProcessName(h);
+            string title = Native.WindowTitle(h);
+            bool terminal = IsTerminal(h);
+            string label = null;
+            bool ai = false;
+            string known;
+            if (AiApps.TryGetValue(proc, out known)) { label = known; ai = true; }
+            else if (BrowserProcesses.Contains(proc, StringComparer.OrdinalIgnoreCase))
+            {
+                string hit = WebAis.FirstOrDefault(w => title.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (hit != null) { label = hit; ai = true; }
+            }
+            else if (terminal)
+            {
+                string hit = CliAis.FirstOrDefault(w => title.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0);
+                label = hit == null ? "Terminal" : hit.Equals("claude", StringComparison.OrdinalIgnoreCase) || hit == "Claude Code" ? "Claude Code" : char.ToUpperInvariant(hit[0]) + hit.Substring(1);
+                ai = hit != null;
+            }
+            if (label == null) label = FriendlyApp(h);
+            string app = FriendlyApp(h);
+            if (string.IsNullOrWhiteSpace(title)) title = app;
+            if (title.Length > 80) title = title.Substring(0, 78) + "…";
+            return new Dictionary<string, object>
+            {
+                { "hwnd", h.ToInt64().ToString(CultureInfo.InvariantCulture) }, { "label", label }, { "app", app },
+                { "title", title }, { "terminal", terminal }, { "ai", ai },
+            };
+        }
+
+        delegate bool EnumProc(IntPtr h, IntPtr l);
+        [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
+        [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr h, int index);
+        [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out int value, int size);
+
+        /// <summary>Open windows you could send to: AI apps and AI tabs first (most recently used
+        /// first), then other recent windows.</summary>
+        List<Dictionary<string, object>> Targets()
+        {
+            var all = new List<IntPtr>();
+            EnumWindows((h, l) =>
+            {
+                if (!IsExternal(h) || Native.Root(h) != h) return true;
+                if ((GetWindowLong(h, -20) & 0x80) != 0) return true; // tool windows
+                int cloaked;
+                if (DwmGetWindowAttribute(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true; // hidden on another desktop
+                if (string.IsNullOrWhiteSpace(Native.WindowTitle(h))) return true;
+                all.Add(h);
+                return true;
+            }, IntPtr.Zero);
+            Func<IntPtr, int> rank = h => { int i = recentWindows.IndexOf(h); return i < 0 ? 1000 : i; };
+            var described = all.Select(h => Tuple.Create(h, Describe(h))).ToList();
+            var ai = described.Where(x => (bool)x.Item2["ai"]).OrderBy(x => rank(x.Item1)).Select(x => x.Item2);
+            var other = described.Where(x => !(bool)x.Item2["ai"] && rank(x.Item1) < 1000).OrderBy(x => rank(x.Item1)).Take(6).Select(x => x.Item2);
+            return ai.Concat(other).ToList();
+        }
+
+        /// <summary>Where the main Send button goes: the most recent AI window, else the last window you used.</summary>
+        IntPtr DefaultTarget()
+        {
+            foreach (var h in recentWindows)
+                if (Native.IsWindow(h) && Native.IsWindowVisible(h) && (bool)Describe(h)["ai"]) return h;
+            return lastTarget;
         }
 
         // ---------------- capture: snip ----------------
@@ -657,9 +794,9 @@ namespace Chipmunk
             {
                 if (ClipboardService.Suppressed) return;
                 if (grab != null) { FinishGrab(); return; }
-                if (snip == null && !collect) return;
                 // Password managers and other private sources mark their clipboard entries; respect that.
                 if (ClipboardService.IsFromMonitorExcludedSource()) return;
+                if (snip == null && !collect) { OfferImage(); return; }
                 var c = ClipboardService.Read();
                 if (snip != null)
                 {
@@ -802,6 +939,16 @@ namespace Chipmunk
                     return new Dictionary<string, object> { { "ok", true } };
                 case "add":
                     return AddFromExtension(Json.Obj(req.ContainsKey("item") ? req["item"] : null));
+                case "saveChat":
+                {
+                    var r = History.SaveFromBrowser(Json.Obj(req.ContainsKey("session") ? req["session"] : null) ?? new Dictionary<string, object>());
+                    if (!Settings.usedExtension) { Settings.usedExtension = true; Settings.Save(); }
+                    win.Emit("historyChanged", r);
+                    string name = History.SourceName((string)r["source"]);
+                    Notify("Saved this " + name + " chat · " + Plural((int)r["turns"], "message") + ". Open Past chats to reuse any part of it.");
+                    r["ok"] = true;
+                    return r;
+                }
                 default:
                     return new Dictionary<string, object> { { "ok", false }, { "error", "Unknown request" } };
             }
@@ -881,17 +1028,108 @@ namespace Chipmunk
             if (result != null) toast.Show(result, true, 5000);
         }
 
-        Dictionary<string, object> SendFromPanel(Draft d)
+        /// <summary>Sends to a chosen window (from the Send menu or the dock), or to the default target.</summary>
+        public Dictionary<string, object> SendFromPanel(Draft d, IntPtr chosen = default(IntPtr))
         {
-            var target = lastTarget;
+            var target = chosen != IntPtr.Zero && Native.IsWindow(chosen) ? chosen : DefaultTarget();
             if (target == IntPtr.Zero || !Native.IsWindow(target))
-                throw new InvalidOperationException("Click into the app you want to send to, then press " + Settings.hotkeys["paste"] + ".");
-            // Switch first, while Windows still lets the panel hand over focus, then get out of the way.
+                throw new InvalidOperationException("Open the AI app you want to send to, or click into it and press " + Settings.hotkeys["paste"] + ".");
+            NoteRecent(target);
+            // Switch first, while Windows still lets us hand over focus, then get out of the way.
             Native.Focus(target);
-            HidePanel();
+            if (win.Visible) HidePanel();
             string error = PasteDraft(d, target);
             if (error != null) toast.Show(error, true, 5000);
             return new Dictionary<string, object> { { "draft", DraftDto(d) }, { "message", error } };
+        }
+
+        public List<Dictionary<string, object>> SendTargets() { return Targets(); }
+
+        public void SendCurrentTo(IntPtr hwnd)
+        {
+            try { SendFromPanel(Current, hwnd); }
+            catch (Exception e) { Notify(e is InvalidOperationException ? e.Message : "Couldn't send: " + e.Message, true); }
+        }
+
+        // ---------------- past chats ----------------
+
+        async Task<object> HistoryAddAsync(string source, string sessionId, object[] items, string mode)
+        {
+            string title = null, url = null;
+            var turns = await Task.Run(() =>
+            {
+                string t, u;
+                var r = History.Load(source, sessionId, out t, out u);
+                title = t;
+                url = u;
+                return r;
+            });
+            string from = History.SourceName(source);
+            string cwd = source == "claude-code" ? await Task.Run(() => ClaudeImport.Cwd(sessionId)) : null;
+            var d = mode == "new" ? Store.Create(string.IsNullOrWhiteSpace(title) ? "From " + from : title) : Current;
+            var prompts = new StringBuilder();
+            int added = 0;
+            var picks = items.Select(Json.Obj).Where(x => x != null)
+                .OrderBy(x => Json.Int(x, "turn")).ThenBy(x => Json.Int(x, "image", -1)).ToList();
+            foreach (var p in picks)
+            {
+                int ti = Json.Int(p, "turn", -1);
+                if (ti < 0 || ti >= turns.Count) continue;
+                var turn = turns[ti];
+                if (Json.Str(p, "kind") == "image")
+                {
+                    int ii = Json.Int(p, "image", -1);
+                    if (ii < 0 || ii >= turn.Images.Count) continue;
+                    byte[] bytes;
+                    try { bytes = History.ImageBytes(turn.Images[ii]); } catch { continue; }
+                    if (Store.AddImage(d, bytes, turn.Images[ii].Mime ?? "image/png", "Image from " + from, from + (title != null ? " · " + title : ""), null) != null) added++;
+                }
+                else if (turn.Role == "user")
+                {
+                    // Your own earlier prompts become editable text in the draft. Files a Claude Code
+                    // prompt pulled in with @mentions come back as attachments.
+                    string text = turn.Text.Trim();
+                    if (source == "claude-code")
+                    {
+                        string rest;
+                        foreach (var f in ClaudeImport.ReferencedFiles(text, cwd, out rest))
+                            if (Store.AddFile(d, f, from, null) != null) added++;
+                        text = rest;
+                    }
+                    if (text.Length > 0) prompts.Append(prompts.Length > 0 ? "\n\n" : "").Append(text);
+                    added++;
+                }
+                else if (Store.AddText(d, turn.Text, from + " reply" + (title != null ? " · " + title : ""), url, null) != null) added++;
+            }
+            if (prompts.Length > 0)
+            {
+                string text = Store.ReadText(d);
+                Store.SaveText(d, string.IsNullOrWhiteSpace(text) ? prompts.ToString() : text.TrimEnd() + "\n\n" + prompts);
+            }
+            if (mode == "new")
+            {
+                Settings.currentDraft = d.id;
+                Settings.Save();
+            }
+            pet.Catch();
+            UpdatePet();
+            return new Dictionary<string, object> { { "draft", DraftDto(d, true) }, { "added", added } };
+        }
+
+        /// <summary>Imports a ChatGPT or Claude export: the given .zip (dropped on Past chats), or one the user picks.</summary>
+        async Task<object> ImportExportAsync(string path)
+        {
+            if (path != null && !File.Exists(path)) throw new InvalidOperationException("That file isn't there anymore.");
+            if (path == null)
+                using (var dlg = new OpenFileDialog { Title = "Choose your ChatGPT or Claude data export (.zip)", Filter = "Data export (*.zip)|*.zip" })
+                {
+                    if (dlg.ShowDialog(win) != DialogResult.OK) return null;
+                    path = dlg.FileName;
+                }
+            Notify("Importing your chats. This can take a minute for big exports…");
+            var r = await Task.Run(() => History.ImportExport(path, msg => { try { win.BeginInvoke((Action)(() => Notify(msg))); } catch { } }));
+            Notify("Imported " + Plural(r.Item2, "chat") + " from " + History.SourceName(r.Item1) + (r.Item3 > 0 ? " with " + Plural(r.Item3, "image") : "") + ".");
+            return new Dictionary<string, object> { { "source", r.Item1 }, { "chats", r.Item2 }, { "images", r.Item3 } };
         }
 
         /// <summary>Pastes the draft into a window. Returns null on success, or an error message.</summary>
@@ -939,7 +1177,8 @@ namespace Chipmunk
             if (job.Images.Count > 0) parts.Add(Plural(job.Images.Count, "image"));
             if (job.Files.Count > 0) parts.Add(Plural(job.Files.Count, "file"));
             if (!string.IsNullOrWhiteSpace(job.Text)) parts.Add(asPaths && atts.Any(a => a.kind == "image" || a.kind == "file") ? "your text with file paths" : "your text");
-            toast.Show("Sent " + string.Join(" + ", parts) + " to " + FriendlyApp(target) + ".");
+            string sent = "Sent " + string.Join(" + ", parts) + " to " + FriendlyApp(target) + ".";
+            if (pet.IsShowing) pet.Say(sent, 3000); else toast.Show(sent);
             return null;
         }
 
@@ -1002,7 +1241,7 @@ namespace Chipmunk
                 { "hotkeys", Settings.hotkeys }, { "pasteDelayMs", Settings.pasteDelayMs }, { "shrinkImages", Settings.shrinkImages },
                 { "terminalPaths", Settings.terminalPaths }, { "restoreClipboard", Settings.restoreClipboard }, { "collectText", Settings.collectText },
                 { "alwaysOnTop", Settings.alwaysOnTop }, { "onboarded", Settings.onboarded }, { "theme", Settings.theme },
-                { "showPet", Settings.showPet }, { "voiceEngine", Settings.voiceEngine }, { "usedVoice", Settings.usedVoice },
+                { "showPet", Settings.showPet }, { "petHints", Settings.petHints }, { "dictation", DictationDto() },
                 { "usedExtension", Settings.usedExtension }, { "dictationApp", RunningDictationApp() },
                 { "startWithWindows", Settings.StartWithWindows }, { "dataDir", Store.Root }, { "version", Program.Version },
                 { "hotkeyErrors", hotkeyErrors ?? new Dictionary<string, string>() },
@@ -1065,7 +1304,7 @@ namespace Chipmunk
                     return new Dictionary<string, object>
                     {
                         { "settings", SettingsDto() }, { "drafts", DraftList() }, { "current", DraftDto(Current) },
-                        { "target", TargetDto(lastTarget) }, { "collect", collect },
+                        { "target", TargetDto(DefaultTarget()) }, { "collect", collect },
                     };
                 case "listDrafts": return DraftList();
                 case "getDraft": return DraftDto(d);
@@ -1108,24 +1347,24 @@ namespace Chipmunk
                 case "revealDraft": OpenFolder(Store.Dir(d)); return true;
                 case "openDataFolder": OpenFolder(Store.Root); return true;
                 case "snip": StartSnip(d != null ? d.id : Settings.currentDraft); return true;
-                case "talk":
-                    if (Settings.voiceEngine == "app")
-                    {
-                        string app = RunningDictationApp();
-                        Notify(app != null ? "Use " + app + " now (for Wispr Flow, hold Ctrl+Win)." : "Start your dictation app now.");
-                        return true;
-                    }
-                    Settings.usedVoice = true;
-                    Settings.Save();
-                    Kbd.Chord(Kbd.LWIN, 0x48); // Win+H toggles Windows voice typing
-                    if (Json.Bool(a, "stop")) { EndListening(); return true; }
-                    pet.SetMode(1);
-                    listenStarted = DateTime.UtcNow;
-                    listenTimer.Start();
-                    win.Emit("voice", true);
-                    return true;
-                case "voiceDone":
-                    EndListening();
+                case "targets": return Targets();
+                case "dictation": return DictationDto();
+                case "historySources": return Task.Run(() => (object)History.Summary());
+                case "historySessions":
+                {
+                    string src = Json.Str(a, "source");
+                    return Task.Run(() => (object)History.Sessions(src));
+                }
+                case "historyConversation":
+                {
+                    string src = Json.Str(a, "source"), sid = Json.Str(a, "sessionId");
+                    return Task.Run(() => (object)History.Conversation(src, sid));
+                }
+                case "historyAdd":
+                    return HistoryAddAsync(Json.Str(a, "source"), Json.Str(a, "sessionId"), Json.Arr(a.ContainsKey("items") ? a["items"] : null) ?? new object[0], Json.Str(a, "mode"));
+                case "historyImport": return ImportExportAsync(Json.Str(a, "path"));
+                case "historyDelete":
+                    History.Delete(Json.Str(a, "source"), Json.Str(a, "sessionId"));
                     return true;
                 case "pickFiles": return PickFiles(d);
                 case "addClipboard":
@@ -1174,14 +1413,7 @@ namespace Chipmunk
                     return DraftDto(d, true);
                 case "setSettings": return ApplySettings(Json.Obj(a["patch"]));
                 case "setCollect": SetCollect(Json.Bool(a, "on")); return true;
-                case "send": return Send(d, Json.Str(a, "how"));
-                case "importSessions": return Task.Run(() => (object)ClaudeImport.Sessions());
-                case "importPrompts":
-                {
-                    string path = Json.Str(a, "path");
-                    return Task.Run(() => (object)ClaudeImport.Prompts(path));
-                }
-                case "importPrompt": return ImportPromptAsync(Json.Str(a, "path"), Json.Int(a, "index"), Json.Str(a, "title"));
+                case "send": return Send(d, Json.Str(a, "how"), Json.Str(a, "hwnd"));
                 case "agentInfo": return AgentInfo();
                 case "browserInfo": return BrowserInfo();
                 case "storageInfo": return Task.Run(() => (object)StorageInfo());
@@ -1278,13 +1510,17 @@ namespace Chipmunk
             return DraftDto(d);
         }
 
-        object Send(Draft d, string how)
+        object Send(Draft d, string how, string hwnd)
         {
             string text = Store.ReadText(d);
             var atts = d.attachments.Where(x => x.include).ToList();
             switch (how)
             {
-                case "paste": return SendFromPanel(d);
+                case "paste":
+                {
+                    long h;
+                    return SendFromPanel(d, hwnd != null && long.TryParse(hwnd, out h) ? new IntPtr(h) : IntPtr.Zero);
+                }
                 case "copyText":
                 {
                     string t = Composer.Build(text, atts, x => Store.FilePath(d, x), false);
@@ -1301,44 +1537,6 @@ namespace Chipmunk
                 }
                 default: throw new InvalidOperationException("Unknown send option.");
             }
-        }
-
-        async Task<object> ImportPromptAsync(string path, int index, string sessionTitle)
-        {
-            string project = null, cwd = null;
-            var result = await Task.Run(() =>
-            {
-                string proj, dir;
-                var p = ClaudeImport.GetPrompt(path, index, out proj, out dir);
-                var pngs = new List<byte[]>();
-                foreach (var img in p.Images)
-                {
-                    try { pngs.Add(ImageUtil.ToPng(Convert.FromBase64String(img.Value))); }
-                    catch (Exception e) { Log.Error("Import image: " + e.Message); }
-                }
-                project = proj;
-                cwd = dir;
-                return Tuple.Create(p, pngs);
-            });
-            var prompt = result.Item1;
-            string text;
-            var referenced = ClaudeImport.ReferencedFiles(prompt.Text, cwd, out text);
-            string title = !string.IsNullOrWhiteSpace(sessionTitle) ? sessionTitle.Trim() : Store.FirstLine(text, 60);
-            var d = Store.Create(string.IsNullOrWhiteSpace(title) ? "Imported prompt" : title);
-            d.imported = true;
-            string source = "Claude Code · " + project;
-            int n = 1;
-            foreach (var png in result.Item2)
-                Store.AddImage(d, png, "image/png", "Image " + n++, source, null);
-            foreach (var f in referenced)
-            {
-                try { Store.AddFile(d, f, source, null); }
-                catch (Exception e) { Log.Error("Import file " + f + ": " + e.Message); }
-            }
-            Store.SaveText(d, text);
-            Settings.currentDraft = d.id;
-            Settings.Save();
-            return DraftDto(d);
         }
 
         object ApplySettings(Dictionary<string, object> p)
@@ -1367,12 +1565,12 @@ namespace Chipmunk
             if (Json.Has(p, "onboarded")) Settings.onboarded = Json.Bool(p, "onboarded");
             if (Json.Has(p, "alwaysOnTop")) Settings.alwaysOnTop = Json.Bool(p, "alwaysOnTop");
             if (Json.Has(p, "theme")) Settings.theme = Json.Str(p, "theme") ?? "system";
-            if (Json.Has(p, "voiceEngine")) Settings.voiceEngine = Json.Str(p, "voiceEngine") == "app" ? "app" : "windows";
             if (Json.Has(p, "showPet"))
             {
                 Settings.showPet = Json.Bool(p, "showPet");
                 pet.SetWanted(Settings.showPet);
             }
+            if (Json.Has(p, "petHints")) Settings.petHints = Json.Bool(p, "petHints");
             if (Json.Has(p, "startWithWindows"))
             {
                 try { Settings.StartWithWindows = Json.Bool(p, "startWithWindows"); }

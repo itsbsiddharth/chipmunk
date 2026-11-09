@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Chipmunk",
   "short_name": "Chipmunk",
-  "version": "1.0.0",
-  "description": "Collect text, images, links, pages and screenshots from any website into your Chipmunk draft, then send it all to any AI.",
+  "version": "1.1.0",
+  "description": "Collect text, images, links and screenshots from any website, and save whole ChatGPT, Claude and Gemini chats into Chipmunk.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzvNRTs3NnxHYQjZRcu8PEW+xq9QONoU6aTpZYVqvm70Uf5EpEfvd5vK9/zfQ4vOXI3ha/17pgkl87nWUCyvwR+vjDAjuLNeqlPghZfDqOPQXkqhakqQLlPtfqDtil2aQZAZwrweOQfk/CnOxGkO5jGeXvJ75ouYDzab649VaJXZx33DbLSf5PIRI9a7haoLvYFzmNBDlyylVT/Z6NI/F9KfY/tFzkmSNup+HQK9/xV/k489ssVUwp5ujTD7DYk0nn0Lhh8VclWvl6D37lo+PuW7kucojT7gdNDjtSF3k82AsW9bf+XlgzZXWSMobVkbUViUlH7TgOBxoqrnYX71EHQIDAQAB",
   "permissions": ["contextMenus", "nativeMessaging", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
@@ -22,6 +22,9 @@
     "screenshot-tab": {
       "suggested_key": { "default": "Alt+Shift+S" },
       "description": "Add a screenshot of this tab to Chipmunk"
+    },
+    "save-chat": {
+      "description": "Save the open ChatGPT, Claude or Gemini chat to Chipmunk"
     }
   }
 }

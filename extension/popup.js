@@ -1,4 +1,4 @@
-import { ask, readSelection } from './chipmunk.js';
+import { ask, readSelection, chatSite } from './chipmunk.js';
 
 const $ = (id) => document.getElementById(id);
 const status = (text, kind) => { $('status').textContent = text || ''; $('status').className = 'status ' + (kind || ''); };
@@ -21,6 +21,12 @@ if (state.ok) {
   if (!state.offline) status(state.error, 'err');
 }
 
+const site = tab && chatSite(tab.url);
+if (site) {
+  $('chat').hidden = false;
+  $('chat-title').textContent = `Save this ${site.name} chat`;
+}
+
 const selection = tab ? await readSelection(tab) : '';
 if (!selection || !selection.trim()) {
   $('sel').disabled = true;
@@ -34,8 +40,8 @@ for (const b of document.querySelectorAll('#actions button')) {
     const r = await chrome.runtime.sendMessage({ type: 'collect', kind: b.dataset.kind, tab });
     if (r && r.ok) {
       showDraft(r);
-      status(r.duplicate ? 'Already in your draft' : 'Added', 'ok');
-      setTimeout(() => window.close(), 900);
+      status(r.message || (r.duplicate ? 'Already in your draft' : 'Added'), 'ok');
+      setTimeout(() => window.close(), r.message ? 1800 : 900);
     } else {
       status((r && r.error) || 'Could not add that.', 'err');
       if (r && r.offline) $('offline').hidden = false;

@@ -95,15 +95,42 @@ namespace Chipmunk
             return r == IntPtr.Zero ? h : r;
         }
 
+        [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+        [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder name, ref int size);
+
+        static readonly System.Collections.Generic.Dictionary<uint, Tuple<string, DateTime>> procNames = new System.Collections.Generic.Dictionary<uint, Tuple<string, DateTime>>();
+
+        /// <summary>The window's process name without ".exe". Cheap: one handle, cached for a minute.</summary>
         public static string ProcessName(IntPtr h)
         {
-            try
+            uint pid;
+            GetWindowThreadProcessId(h, out pid);
+            if (pid == 0) return "";
+            var now = DateTime.UtcNow;
+            lock (procNames)
             {
-                uint pid;
-                GetWindowThreadProcessId(h, out pid);
-                using (var p = Process.GetProcessById((int)pid)) return p.ProcessName;
+                Tuple<string, DateTime> hit;
+                if (procNames.TryGetValue(pid, out hit) && now - hit.Item2 < TimeSpan.FromMinutes(1)) return hit.Item1;
             }
-            catch { return ""; }
+            string name = "";
+            IntPtr hp = OpenProcess(0x1000 /* QUERY_LIMITED_INFORMATION */, false, pid);
+            if (hp != IntPtr.Zero)
+            {
+                try
+                {
+                    var sb = new StringBuilder(1024);
+                    int len = sb.Capacity;
+                    if (QueryFullProcessImageName(hp, 0, sb, ref len)) name = Path.GetFileNameWithoutExtension(sb.ToString());
+                }
+                finally { CloseHandle(hp); }
+            }
+            lock (procNames)
+            {
+                if (procNames.Count > 400) procNames.Clear();
+                procNames[pid] = Tuple.Create(name, now);
+            }
+            return name;
         }
 
         public static uint ProcessId(IntPtr h)

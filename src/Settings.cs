@@ -89,8 +89,7 @@ namespace Chipmunk
         public int[] bounds;
         public bool showPet = true;
         public int[] petPos;
-        public string voiceEngine = "windows";   // "windows" (built-in voice typing) or "app" (Wispr Flow, Aqua...)
-        public bool usedVoice;
+        public bool petHints = true;              // Chip offers to send drafts and keep screenshots
         public bool usedExtension;
 
         /// <summary>Win+Alt shortcuts: they never collide with AltGr (Ctrl+Alt) on international keyboards.</summary>
@@ -99,7 +98,6 @@ namespace Chipmunk
             return new Dictionary<string, string>
             {
                 { "toggle", "Win+Alt+P" },
-                { "talk", "Win+Alt+Space" },
                 { "snip", "Win+Alt+S" },
                 { "grab", "Win+Alt+C" },
                 { "paste", "Win+Alt+V" },
@@ -139,7 +137,7 @@ namespace Chipmunk
                 s.dataDir = ProfileDir != null ? Path.Combine(ProfileDir, "data") : Path.Combine(Native.DocumentsFolder(), "Chipmunk");
                 MigrateFromPromptpad(s.dataDir);
             }
-            if (s.voiceEngine != "app") s.voiceEngine = "windows";
+            s.hotkeys.Remove("talk"); // Talk was removed in 1.1: dictation apps already type into Chipmunk
             s.pasteDelayMs = Math.Max(120, Math.Min(3000, s.pasteDelayMs));
             return s;
         }

@@ -32,11 +32,12 @@ export class MockHost {
   constructor(emit) {
     this.emit = emit;
     this.settings = {
-      hotkeys: { toggle: 'Win+Alt+P', talk: 'Win+Alt+Space', snip: 'Win+Alt+S', grab: 'Win+Alt+C', paste: 'Win+Alt+V' },
+      hotkeys: { toggle: 'Win+Alt+P', snip: 'Win+Alt+S', grab: 'Win+Alt+C', paste: 'Win+Alt+V' },
       pasteDelayMs: 450, shrinkImages: true, terminalPaths: true, restoreClipboard: true,
       collectText: false, startWithWindows: false, alwaysOnTop: false, theme: 'system',
-      showPet: true, voiceEngine: 'windows', usedVoice: false, usedExtension: false, dictationApp: null,
-      onboarded: new URLSearchParams(location.search).has('onboarded'), dataDir: 'C:\\Users\\you\\Documents\\Chipmunk', version: '1.0.0 (preview)',
+      showPet: true, petHints: true, usedExtension: false,
+      dictation: new URLSearchParams(location.search).has('wispr') ? { app: 'Wispr Flow', hint: 'hold Ctrl+Win' } : { app: null, hint: 'Win+H' },
+      onboarded: new URLSearchParams(location.search).has('onboarded'), dataDir: 'C:\\Users\\you\\Documents\\Chipmunk', version: '1.1.0 (preview)',
     };
     this.collect = false;
     this.drafts = new Map();
@@ -73,7 +74,22 @@ export class MockHost {
       { name: 'v2', time: new Date(Date.now() - 20 * 60000).toISOString(), text: 'Colab keeps stopping.' },
     ]);
 
-    setTimeout(() => this.emit('target', { app: 'Chrome', title: 'ChatGPT — Google Chrome', terminal: false }), 50);
+    this.windows = [
+      { hwnd: '101', label: 'ChatGPT', app: 'ChatGPT', title: 'ChatGPT', terminal: false, ai: true },
+      { hwnd: '102', label: 'Claude Code', app: 'Terminal', title: 'Claude Code · chipmunk', terminal: true, ai: true },
+      { hwnd: '103', label: 'Antigravity', app: 'Antigravity', title: 'Antigravity · landing-page', terminal: false, ai: true },
+      { hwnd: '104', label: 'Claude', app: 'Chrome', title: 'Fix the onboarding flow - Claude', terminal: false, ai: true },
+      { hwnd: '105', label: 'Slack', app: 'Slack', title: 'Slack · #design', terminal: false, ai: false },
+      { hwnd: '106', label: 'File Explorer', app: 'File Explorer', title: 'Downloads', terminal: false, ai: false },
+    ];
+    this.saved = {
+      chatgpt: [
+        { id: 'g1', title: 'Debug the Colab OOM', sub: 'chatgpt.com', updated: new Date(Date.now() - 2 * 3600000).toISOString(), turns: 3, images: 2 },
+        { id: 'g2', title: 'Pricing page ideas', sub: 'chatgpt.com', updated: new Date(Date.now() - 4 * 86400000).toISOString(), turns: 6, images: 0 },
+      ],
+      claude: [], gemini: [],
+    };
+    setTimeout(() => this.emit('target', this.windows[0]), 50);
   }
 
   make(title, text) {
@@ -221,34 +237,62 @@ export class MockHost {
       case 'send': {
         if (args.how === 'paste') {
           d.status = 'sent'; d.sends.push({ at: now(), target: 'Chrome' });
-          this.emit('toast', { text: '(mock) Pasted 2 images, 1 file and your text into Chrome' });
+          const w = this.windows.find(x => x.hwnd === args.hwnd) || this.windows[0];
+          this.emit('toast', { text: `(mock) Pasted everything into ${w.label}` });
           return { draft: this.copy(d) };
         }
         return { draft: this.copy(d), message: args.how === 'copyText' ? 'Copied the text' : 'Copied 3 files. Paste them anywhere.' };
       }
-      case 'importSessions':
-        await wait(300);
+      case 'targets': return this.windows;
+      case 'historySources':
         return [
-          { path: 's1', title: 'CaML token patching run', project: 'caml-work', updated: new Date(Date.now() - 31 * 86400000).toISOString(), promptCount: 9, imageCount: 5 },
-          { path: 's2', title: 'Portfolio website redesign', project: 'my website', updated: new Date(Date.now() - 6 * 86400000).toISOString(), promptCount: 14, imageCount: 1 },
-          { path: 's3', title: 'Streamer overlay ideas', project: 'streamer-projects', updated: new Date(Date.now() - 18 * 86400000).toISOString(), promptCount: 4, imageCount: 6 },
+          { id: 'claude-code', name: 'Claude Code', count: -1, local: true },
+          { id: 'codex', name: 'Codex', count: -1, local: true },
+          { id: 'antigravity', name: 'Antigravity', count: -1, local: true },
+          { id: 'chatgpt', name: 'ChatGPT', count: this.saved.chatgpt.length, local: false },
+          { id: 'claude', name: 'Claude', count: this.saved.claude.length, local: false },
+          { id: 'gemini', name: 'Gemini', count: this.saved.gemini.length, local: false },
         ];
-      case 'importPrompts':
-        await wait(200);
+      case 'historySessions':
+        await wait(150);
+        if (this.saved[args.source]) return this.saved[args.source];
         return [
-          { index: 0, time: new Date(Date.now() - 32 * 86400000).toISOString(), text: 'Look around the repo and tell me how the patching works.', imageCount: 0, thumbs: [] },
-          { index: 1, time: new Date(Date.now() - 31 * 86400000).toISOString(), text: 'I just ran the notebook on Colab with everything you said to do. But I went to drink some water and when I came back it had stopped, showing this screenshot.', imageCount: 2, thumbs: [fakeShot('Colab', 20), fakeShot('Logs', 200)] },
+          { id: 's1', title: 'CaML token patching run', sub: 'caml-work', updated: new Date(Date.now() - 31 * 86400000).toISOString(), turns: 9, images: 5 },
+          { id: 's2', title: 'Portfolio website redesign', sub: 'my-website', updated: new Date(Date.now() - 6 * 86400000).toISOString(), turns: 14, images: 1 },
+          { id: 's3', title: 'Streamer overlay ideas', sub: 'streamer-projects', updated: new Date(Date.now() - 18 * 86400000).toISOString(), turns: 4, images: 6 },
         ];
-      case 'importPrompt': {
-        const n = this.make('Imported: Colab run stopped', 'I just ran the notebook on Colab with everything you said to do. But I went to drink some water and when I came back it had stopped, showing this screenshot.');
-        n.imported = true;
-        n.attachments.push(this.img('Imported image 1', 'Claude Code · caml-work', 20, 2000, 1146), this.img('Imported image 2', 'Claude Code · caml-work', 200, 1800, 1000));
-        this.current = n.id;
-        return this.copy(n);
+      case 'historyConversation': {
+        await wait(150);
+        const names = { 'claude-code': 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini' };
+        return {
+          source: args.source, sourceName: names[args.source], id: args.sessionId, title: 'Debug the Colab OOM',
+          turns: [
+            { index: 0, role: 'user', time: new Date(Date.now() - 3 * 3600000).toISOString(), text: 'My Colab notebook stops after ~40 minutes. Here is what it shows when it dies.', images: [{ index: 0, thumb: fakeShot('Colab', 20) }, { index: 1, thumb: fakeShot('GPU', 200) }] },
+            { index: 1, role: 'assistant', time: null, text: 'That error is a CUDA out-of-memory crash, not an idle timeout. Your batch of 64 sequences at 4k tokens needs about 19 GB, and the T4 has 16 GB.\n\nThree fixes, in order of effort:\n1. Drop the batch to 32 and use gradient accumulation of 2.\n2. Turn on bf16 autocast.\n3. Checkpoint every 500 steps so a crash costs minutes, not hours.', images: [] },
+            { index: 2, role: 'user', time: new Date(Date.now() - 2.5 * 3600000).toISOString(), text: 'Okay, did 1 and 3. How do I resume from the last checkpoint without redoing the warmup?', images: [] },
+            { index: 3, role: 'assistant', time: null, text: 'Load the optimizer and scheduler state along with the weights, and set the start step from the checkpoint name. The warmup is part of the scheduler, so restoring its state skips it.', images: [] },
+            { index: 4, role: 'user', time: new Date(Date.now() - 2 * 3600000).toISOString(), text: 'Here is the new loss curve after resuming.', images: [{ index: 0, thumb: fakeShot('Loss', 140) }] },
+          ],
+        };
       }
-      case 'talk':
-        this.emit('voice', true);
-        setTimeout(() => this.emit('voice', false), 3500);
+      case 'historyAdd': {
+        await wait(200);
+        const target = args.mode === 'new' ? this.make('Debug the Colab OOM', '') : this.drafts.get(this.current);
+        for (const it of args.items) {
+          if (it.kind === 'image') target.attachments.push(this.img('Image from ChatGPT', 'ChatGPT · Debug the Colab OOM', (it.turn * 70 + 20) % 360, 1600, 900));
+          else if (it.turn % 2 === 0) target.text = (target.text ? target.text.trimEnd() + '\n\n' : '') + 'From an earlier chat: prompt ' + it.turn;
+          else target.attachments.push({ id: id('a'), kind: 'text', text: 'That error is a CUDA out-of-memory crash, not an idle timeout.', source: 'ChatGPT reply · Debug the Colab OOM', include: true });
+        }
+        target.updated = now();
+        this.current = target.id;
+        return { draft: this.copy(target), added: args.items.length };
+      }
+      case 'historyImport':
+        await wait(400);
+        this.saved.claude.push({ id: 'c1', title: 'Write the launch tweet', sub: 'Claude', updated: now(), turns: 2, images: 0 });
+        return { source: 'claude', chats: 1, images: 0 };
+      case 'historyDelete':
+        this.saved[args.source] = (this.saved[args.source] || []).filter(x => x.id !== args.sessionId);
         return true;
       case 'agentInfo':
         return {
@@ -261,7 +305,7 @@ export class MockHost {
       case 'storageInfo': return { bytes: 18_400_000, files: 42, drafts: this.drafts.size, linked: 1 };
       case 'copyToClipboard': return true;
       case 'openExtensionFolder': this.emit('toast', { text: '(mock) Would open the extension folder' }); return true;
-      case 'suspendHotkeys': case 'hide': case 'flushed': case 'voiceDone': return true;
+      case 'suspendHotkeys': case 'hide': case 'flushed': return true;
       default: throw new Error('Mock host does not know ' + cmd);
     }
   }

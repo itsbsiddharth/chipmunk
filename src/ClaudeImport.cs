@@ -118,30 +118,6 @@ namespace Chipmunk
             return s;
         }
 
-        public static List<Dictionary<string, object>> Prompts(string path)
-        {
-            string title, cwd;
-            var prompts = Read(path, true, out title, out cwd);
-            return prompts.Select(p => new Dictionary<string, object>
-            {
-                { "index", p.Index },
-                { "time", p.Time.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture) },
-                { "text", p.Text.Length > 1200 ? p.Text.Substring(0, 1200) + "…" : p.Text },
-                { "imageCount", p.ImageCount },
-                { "thumbs", p.Images.Take(4).Select(i => ImageUtil.ThumbDataUrl(Convert.FromBase64String(i.Value), 132, 90)).Where(u => u != null).ToList() },
-            }).ToList();
-        }
-
-        public static Prompt GetPrompt(string path, int index, out string project, out string cwd)
-        {
-            string title;
-            var prompts = Read(path, true, out title, out cwd);
-            project = cwd != null ? Path.GetFileName(cwd.TrimEnd('\\', '/')) : "Claude Code";
-            var p = prompts.FirstOrDefault(x => x.Index == index);
-            if (p == null) throw new InvalidOperationException("That prompt is no longer in the session.");
-            return p;
-        }
-
         static readonly Regex Mention = new Regex(@"@""([^""\r\n]+)""|@([A-Za-z]:\\[^\s""]+)", RegexOptions.Compiled);
 
         /// <summary>
@@ -205,9 +181,94 @@ namespace Chipmunk
             return prompts;
         }
 
+        /// <summary>The folder the session ran in, for resolving @file mentions.</summary>
+        public static string Cwd(string path)
+        {
+            try
+            {
+                using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                using (var sr = new StreamReader(fs, Encoding.UTF8))
+                {
+                    string line;
+                    for (int i = 0; i < 400 && (line = sr.ReadLine()) != null; i++)
+                    {
+                        if (line.IndexOf("\"cwd\"", StringComparison.Ordinal) < 0) continue;
+                        string cwd = Json.Str(Json.Obj(TryParse(line)), "cwd");
+                        if (!string.IsNullOrEmpty(cwd)) return cwd;
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+
         static object TryParse(string line)
         {
             try { return Json.Parse(line); } catch { return null; }
+        }
+
+        /// <summary>The whole conversation: your prompts (with their images) and Claude's written replies.</summary>
+        public static List<HTurn> Turns(string path, out string title)
+        {
+            title = null;
+            var turns = new List<HTurn>();
+            var seen = new HashSet<string>();
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            using (var sr = new StreamReader(fs, Encoding.UTF8))
+            {
+                string line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if (line.Length < 20) continue;
+                    if (line.IndexOf("\"type\":\"custom-title\"", StringComparison.Ordinal) >= 0)
+                    {
+                        string t = Json.Str(Json.Obj(TryParse(line)), "customTitle");
+                        if (!string.IsNullOrWhiteSpace(t)) title = t;
+                        continue;
+                    }
+                    bool user = line.IndexOf("\"type\":\"user\"", StringComparison.Ordinal) >= 0 && line.IndexOf("\"tool_use_id\"", StringComparison.Ordinal) < 0;
+                    bool assistant = !user && line.IndexOf("\"type\":\"assistant\"", StringComparison.Ordinal) >= 0 && line.IndexOf("\"type\":\"text\"", StringComparison.Ordinal) >= 0;
+                    if (!user && !assistant) continue;
+                    var obj = Json.Obj(TryParse(line));
+                    if (obj == null || Json.Bool(obj, "isSidechain")) continue;
+                    string uuid = Json.Str(obj, "uuid");
+                    if (uuid != null && !seen.Add(uuid)) continue;
+                    if (user && Json.Str(obj, "type") == "user")
+                    {
+                        var p = ToPrompt(obj, true);
+                        if (p == null) continue;
+                        var turn = new HTurn { Role = "user", Text = p.Text, Time = p.Time };
+                        foreach (var img in p.Images) turn.Images.Add(new HImage { Mime = img.Key, Base64 = img.Value });
+                        turns.Add(turn);
+                    }
+                    else if (Json.Str(obj, "type") == "assistant")
+                    {
+                        var msg = Json.Obj(obj.ContainsKey("message") ? obj["message"] : null);
+                        var parts = Json.Arr(msg != null && msg.ContainsKey("content") ? msg["content"] : null);
+                        if (parts == null) continue;
+                        var sb = new StringBuilder();
+                        foreach (var part in parts.Select(Json.Obj))
+                            if (Json.Str(part, "type") == "text") sb.Append(Json.Str(part, "text")).Append("\n\n");
+                        string text = sb.ToString().Trim();
+                        if (text.Length == 0) continue;
+                        // One reply often spans several lines in the transcript; keep it as one turn.
+                        var last = turns.Count > 0 ? turns[turns.Count - 1] : null;
+                        if (last != null && last.Role == "assistant") last.Text += "\n\n" + text;
+                        else
+                        {
+                            DateTime t;
+                            DateTime.TryParse(Json.Str(obj, "timestamp"), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out t);
+                            turns.Add(new HTurn { Role = "assistant", Text = text, Time = t == DateTime.MinValue ? t : t.ToLocalTime() });
+                        }
+                    }
+                }
+            }
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                var first = turns.FirstOrDefault(x => x.Role == "user");
+                title = first != null ? Store.FirstLine(first.Text, 80) : "Claude Code session";
+            }
+            return turns;
         }
 
         static Prompt ToPrompt(Dictionary<string, object> o, bool withImages)

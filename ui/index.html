@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div id="app" class="app">
+<div id="app" class="app preload">
   <header class="topbar">
     <img class="brand" src="assets/icon.png" alt="Chipmunk" width="24" height="24">
     <input id="title" class="title-input" placeholder="Untitled draft" spellcheck="false" maxlength="120" aria-label="Draft title">
@@ -28,9 +28,9 @@
   <main id="scroll" class="scroll">
     <div class="doc" id="doc">
       <textarea id="editor" class="editor" spellcheck="true" aria-label="Prompt"
-        placeholder="What do you want the AI to do? Type it, or press the mic and say it."></textarea>
+        placeholder="What do you want the AI to do? Type it, or dictate it with Wispr Flow or Win+H."></textarea>
       <div class="doc-foot">
-        <button class="talk-btn" id="btn-talk" type="button"></button>
+        <button class="dictation" id="dictation" type="button"></button>
         <span class="doc-meta" id="word-count"></span>
       </div>
     </div>
@@ -42,7 +42,10 @@
     <div class="actions">
       <button class="btn quiet" id="btn-copy-text" title="Copy the prompt with its quotes and links">Copy text</button>
       <button class="btn quiet" id="btn-copy-files" title="Copy the images and files, to paste anywhere">Copy files</button>
-      <button class="btn primary" id="btn-send"></button>
+      <div class="send-split">
+        <button class="btn primary" id="btn-send"></button>
+        <button class="btn primary" id="btn-send-more" title="Choose where to send" aria-label="Choose where to send" aria-haspopup="menu"><svg viewBox="0 0 24 24" class="caret"><polyline points="6 15 12 9 18 15"/></svg></button>
+      </div>
     </div>
   </footer>
   <div id="overlay-root"></div>
