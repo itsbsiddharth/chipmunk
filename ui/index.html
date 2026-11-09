@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chipmunk</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app" class="app">
+  <header class="topbar">
+    <img class="brand" src="assets/icon.png" alt="Chipmunk" width="24" height="24">
+    <input id="title" class="title-input" placeholder="Untitled draft" spellcheck="false" maxlength="120" aria-label="Draft title">
+    <button class="icon-btn" id="btn-drafts" title="All drafts (Ctrl+K)" aria-label="All drafts"></button>
+    <button class="icon-btn" id="btn-new" title="New draft (Ctrl+N)" aria-label="New draft"></button>
+    <button class="icon-btn" id="btn-more" title="More" aria-label="More actions"></button>
+    <button class="icon-btn" id="btn-settings" title="Settings (Ctrl+,)" aria-label="Settings"></button>
+  </header>
+  <div class="subbar">
+    <span id="save-state" class="save-state"><span class="dot"></span><span class="txt">Saved</span></span>
+    <label class="switch-label collect" id="collect" title="While on, every screenshot you copy (Win+Shift+S, Print Screen, Ditto) lands in this draft">
+      <span class="pulse"></span>
+      <span>Collect screenshots</span>
+      <input type="checkbox" id="collect-toggle">
+      <span class="switch"></span>
+    </label>
+  </div>
+  <main id="scroll" class="scroll">
+    <div class="doc" id="doc">
+      <textarea id="editor" class="editor" spellcheck="true" aria-label="Prompt"
+        placeholder="What do you want the AI to do? Type it, or press the mic and say it."></textarea>
+      <div class="doc-foot">
+        <button class="talk-btn" id="btn-talk" type="button"></button>
+        <span class="doc-meta" id="word-count"></span>
+      </div>
+    </div>
+    <section class="section" id="checklist-section"></section>
+    <section class="section" id="attachments-section"></section>
+  </main>
+  <footer class="footer">
+    <div id="estimate" class="estimate"></div>
+    <div class="actions">
+      <button class="btn quiet" id="btn-copy-text" title="Copy the prompt with its quotes and links">Copy text</button>
+      <button class="btn quiet" id="btn-copy-files" title="Copy the images and files, to paste anywhere">Copy files</button>
+      <button class="btn primary" id="btn-send"></button>
+    </div>
+  </footer>
+  <div id="overlay-root"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="drop" class="drop"><div class="drop-card" id="drop-card">Drop to add to this draft</div></div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

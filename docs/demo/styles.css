@@ -1,0 +1,16 @@
+/* Acme sign-in page (demo file for the Chipmunk README) */
+.login .btn {
+  position: absolute;
+  bottom: 34px;
+  z-index: 2;
+}
+
+footer {
+  position: absolute; /* added in the refactor */
+  bottom: 0;
+  height: 70px;
+}
+
+main {
+  padding: 28px 22px;
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chipmunk</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/48.png" alt="" width="26" height="26">
+    <div class="who">
+      <div class="name">Chipmunk</div>
+      <div class="draft" id="draft">Connecting…</div>
+    </div>
+    <span class="count" id="count" hidden></span>
+  </header>
+
+  <div id="actions">
+    <button data-kind="selection" id="sel"><span class="i">“”</span><span><b>Add selection</b><small>What you highlighted on this page</small></span><kbd>Alt+Shift+A</kbd></button>
+    <button data-kind="shot"><span class="i">▢</span><span><b>Screenshot this tab</b><small>What you can see right now</small></span><kbd>Alt+Shift+S</kbd></button>
+    <button data-kind="page-text"><span class="i">¶</span><span><b>Add page text</b><small>The article or main content</small></span></button>
+    <button data-kind="page"><span class="i">↗</span><span><b>Add page link</b><small id="url"></small></span></button>
+  </div>
+
+  <div id="offline" hidden>
+    <p><b>Chipmunk app not found.</b></p>
+    <p>Install and open the Chipmunk app on this PC. It connects to this extension by itself.</p>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <footer>
+    <button id="open">Open Chipmunk</button>
+    <span>Right-click anything on a page for more</span>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

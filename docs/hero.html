@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Chipmunk hero</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1600px; height: 900px; overflow: hidden; background: #f7f6f2; font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif; color: #1d1b18; position: relative; }
+  .glow { position: absolute; right: -120px; top: -160px; width: 900px; height: 900px; border-radius: 50%; background: radial-gradient(closest-side, #f3dcc6 0%, rgba(243,220,198,0) 70%); }
+  .copy { position: absolute; left: 110px; top: 150px; width: 700px; }
+  .brand { display: flex; align-items: center; gap: 14px; font-family: "Sitka Subheading", Georgia, serif; font-weight: 600; font-size: 30px; }
+  .brand img { width: 52px; height: 52px; border-radius: 13px; }
+  h1 { font-family: "Sitka Subheading", Georgia, serif; font-weight: 600; font-size: 78px; line-height: 1.04; letter-spacing: -.02em; margin: 46px 0 26px; }
+  p { font-size: 25px; line-height: 1.55; color: #5d5951; margin: 0 0 40px; }
+  .keys { display: flex; gap: 14px; flex-wrap: wrap; }
+  .key { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e6e2d9; border-radius: 14px; padding: 10px 16px 10px 12px; font-size: 18px; color: #5d5951; }
+  kbd { font: 600 15px "Segoe UI", sans-serif; background: #f1efe9; border: 1px solid #d5d0c4; border-bottom-width: 3px; border-radius: 7px; padding: 4px 8px; color: #1d1b18; }
+  .shot { position: absolute; right: 120px; top: 70px; width: 452px; border-radius: 22px; overflow: hidden; box-shadow: 0 40px 90px rgba(60, 40, 20, .22), 0 4px 14px rgba(60, 40, 20, .08); border: 1px solid #e6e2d9; background: #fff; }
+  .shot .bar { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 14px; background: #f1efe9; border-bottom: 1px solid #e6e2d9; }
+  .shot .bar i { width: 11px; height: 11px; border-radius: 50%; background: #d5d0c4; }
+  .shot img { display: block; width: 100%; height: 760px; object-fit: cover; object-position: top; }
+  .chip { position: absolute; right: 548px; bottom: 34px; width: 220px; filter: drop-shadow(0 18px 24px rgba(60, 40, 20, .2)); }
+  .bubble { position: absolute; right: 700px; bottom: 236px; background: #1d1b18; color: #fff; font-size: 18px; font-weight: 600; padding: 12px 18px; border-radius: 16px 16px 4px 16px; }
+</style></head>
+<body>
+  <div class="glow"></div>
+  <div class="copy">
+    <div class="brand"><img src="img/icon.png" alt="">Chipmunk</div>
+    <h1>Give your AI the whole picture.</h1>
+    <p>Talk, snip and grab from any app or website. Chipmunk packs it all into one draft and hands it to ChatGPT, Claude, Gemini or Claude Code in one keystroke.</p>
+    <div class="keys">
+      <div class="key"><kbd>Win+Alt+Space</kbd> Talk</div>
+      <div class="key"><kbd>Win+Alt+S</kbd> Snip</div>
+      <div class="key"><kbd>Win+Alt+V</kbd> Send</div>
+    </div>
+  </div>
+  <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/panel-light.png" alt=""></div>
+  <div class="bubble">5 things collected</div>
+  <img class="chip" src="img/chip.png" alt="">
+</body></html>
