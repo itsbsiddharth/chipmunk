@@ -104,8 +104,6 @@ const el = {
   estimate: $('#estimate'),
   send: $('#btn-send'),
   sendMore: $('#btn-send-more'),
-  copyText: $('#btn-copy-text'),
-  copyFiles: $('#btn-copy-files'),
   overlay: $('#overlay-root'),
   toasts: $('#toasts'),
   drop: $('#drop'),
@@ -276,6 +274,8 @@ function renderChecklist() {
   const sec = el.checklist;
   sec.replaceChildren();
   const items = checklist();
+  sec.hidden = !items.length && !S.showChecklist;
+  if (sec.hidden) return;
   const done = items.filter(i => i.done).length;
   sec.append(h('div', { class: 'section-head' },
     h('div', { class: 'section-title' }, 'To attach',
@@ -403,12 +403,12 @@ function renderAttachments() {
     sec.append(h('div', { class: 'empty' },
       h('img', { src: 'assets/chip.png', alt: '' }),
       h('div', {},
-        h('div', { class: 'e-title' }, 'Nothing collected yet'),
-        h('div', { class: 'e-body' }, 'Snip, grab or drop screenshots, files, quotes and links, or reuse pieces of past chats. Chip carries it all to your AI.'),
+        h('div', { class: 'e-title' }, 'Screenshots land here by themselves'),
+        h('div', { class: 'e-body' }, 'While this panel is open, every screenshot you take goes into the draft. Drop or paste files, text and links too.'),
         h('div', { class: 'keys' },
-          h('kbd', {}, hk('snip')), h('span', {}, 'Snip part of the screen'),
-          h('kbd', {}, hk('grab')), h('span', {}, 'Grab what you highlighted'),
-          h('kbd', {}, hk('paste')), h('span', {}, 'Send it all to the app you\'re in')))));
+          h('kbd', {}, 'Win+Shift+S'), h('span', {}, 'Take a screenshot, as usual'),
+          h('kbd', {}, hk('grab')), h('span', {}, 'Grab text you highlighted in any app'),
+          h('kbd', {}, 'Ctrl+V'), h('span', {}, 'Paste files, images or links here')))));
     return;
   }
 
@@ -603,8 +603,6 @@ function renderFooter() {
   el.send.disabled = !hasContent;
   el.sendMore.disabled = !hasContent;
   el.send.title = t ? `Switch to "${t.title}" and paste everything (Ctrl+Enter)` : 'Pick where to send';
-  el.copyFiles.disabled = !(e.images + e.files);
-  el.copyText.disabled = !((S.d.text || '').trim() || e.quotes || e.links);
 }
 
 // ---------- sending ----------
@@ -653,6 +651,9 @@ async function openSendMenu() {
     other.length ? h('div', { class: 'menu-label' }, ai.length ? 'Other windows' : 'Recent windows') : null,
     other.map(row),
     targets.length ? null : h('div', { class: 'menu-empty' }, 'Open ChatGPT, Claude, Codex, Antigravity or any app and it shows up here.'),
+    h('div', { class: 'sep' }),
+    h('button', { class: 'copy-row', onclick: () => { closeOverlay(); send('copyText'); } }, icon('copy'), 'Copy the text', h('span', { class: 'menu-sub' }, 'with quotes and links')),
+    h('button', { class: 'copy-row', onclick: () => { closeOverlay(); send('copyFiles'); } }, icon('paperclip'), 'Copy images and files', h('span', { class: 'menu-sub' }, 'to paste anywhere')),
     h('div', { class: 'menu-hint' }, 'Or press ', h('kbd', {}, hk('paste')), ' in any app'));
   showOverlay('send-menu', [h('div', { class: 'scrim', style: { background: 'transparent' }, onclick: closeOverlay }), menu]);
   el.sendMore.classList.add('active');
@@ -689,15 +690,13 @@ function openWelcome() {
   const modal = h('div', { class: 'modal welcome', role: 'dialog', 'aria-label': 'Welcome to Chipmunk' },
     h('div', { class: 'w-hero' }, h('img', { src: 'assets/chip.png', alt: '' }), h('h3', {}, 'Meet Chip.')),
     h('div', { class: 'w-body' },
-      h('p', { class: 'w-lede' }, 'Your AI is only as good as the context you give it. Chipmunk gathers it from anywhere and hands it over in one go.'),
-      step(1, 'Collect', h('span', {}, 'Snip ', h('kbd', {}, hk('snip')), ', grab a selection ', h('kbd', {}, hk('grab')), ', drop anything on Chip, or reuse pieces of past chats.')),
-      step(2, 'Shape it', 'Type or dictate your prompt. Everything lands in one draft that saves as you go.'),
-      step(3, 'Send', h('span', {}, 'Pick ChatGPT, Claude, Codex, Antigravity or any app, or press ', h('kbd', {}, hk('paste')), ' wherever you are. Every screenshot, file and word goes in.')),
+      h('p', { class: 'w-lede' }, 'A safe place to build a prompt with all its screenshots and files, then hand the whole thing to any AI at once.'),
+      step(1, 'Open it', h('span', {}, 'Press ', h('kbd', {}, hk('toggle')), ' from anywhere, or click Chip.')),
+      step(2, 'Throw things in', h('span', {}, 'Screenshots you take land here by themselves. Paste or drop files, and type or dictate your prompt.')),
+      step(3, 'Send', 'Pick ChatGPT, Claude, Codex, Antigravity or any app. Everything goes in, in one go.'),
       h('div', { class: 'w-foot' },
         h('label', { class: 'switch-label' }, startup, h('span', { class: 'switch' }), 'Start with Windows'),
-        h('div', { class: 'row-buttons' },
-          h('button', { class: 'btn ghost', onclick: () => finish(true) }, icon('globe'), 'Browser extension'),
-          h('button', { class: 'btn primary', style: { flex: 'none' }, onclick: () => finish(false) }, 'Start')))));
+        h('button', { class: 'btn primary', style: { flex: 'none' }, onclick: () => finish(false) }, 'Get started'))));
   showOverlay('welcome', [h('div', { class: 'modal-wrap' }, modal)]);
 }
 
@@ -835,6 +834,7 @@ function openMenu(anchor) {
       await openDraft(d.id, d);
       toast('Made a copy. The original is unchanged.');
     }),
+    item('target', 'Add a reminder of what to attach', () => { S.showChecklist = true; renderChecklist(); const i = el.checklist.querySelector('.add-check input'); if (i) i.focus(); }),
     item('clock', 'Version history', () => openVersions()),
     item('inbox', 'Past chats', () => openHistory()),
     item('folder', 'Show in folder', () => Host.call('revealDraft', { id: S.d.id })),
@@ -933,17 +933,18 @@ const HISTORY_HELP = {
   chatgpt: {
     title: 'Bring your ChatGPT chats here',
     steps: [
-      ['Save a chat', 'Open it on chatgpt.com, click the Chipmunk extension and choose Save this chat.'],
-      ['Use the ChatGPT app?', 'It keeps chats online, not on your PC. Open the same chat on chatgpt.com (it\'s synced) and save it there.'],
-      ['Or bring everything', 'In ChatGPT: Settings → Data controls → Export data. Then import the .zip you get by email.'],
+      ['Export your chats', 'In ChatGPT (app or website): Settings → Data controls → Export data. You get a .zip by email in a few minutes.'],
+      ['Import it here', 'Click Import below and pick that .zip. Every chat comes in with its images, ready to reuse.'],
+      ['Optional: one chat at a time', 'With the Chipmunk browser extension, open a chat on chatgpt.com and choose Save this chat.'],
     ],
     importable: true,
   },
   claude: {
     title: 'Bring your Claude chats here',
     steps: [
-      ['Save a chat', 'Open it on claude.ai, click the Chipmunk extension and choose Save this chat.'],
-      ['Or bring everything', 'In Claude: Settings → Privacy → Export data. Then import the .zip you get by email.'],
+      ['Export your chats', 'In Claude: Settings → Privacy → Export data. You get a .zip by email.'],
+      ['Import it here', 'Click Import below and pick that .zip.'],
+      ['Optional: one chat at a time', 'With the Chipmunk browser extension, open a chat on claude.ai and choose Save this chat.'],
     ],
     importable: true,
   },
@@ -981,7 +982,7 @@ async function openHistory(startSource) {
   search.addEventListener('input', () => onSearch());
 
   const loadSources = async () => {
-    sources = await Host.call('historySources');
+    sources = (await Host.call('historySources')).filter(s => s.id !== 'gemini' || s.count > 0);
     if (!sources.find(s => s.id === source)) source = sources[0].id;
   };
   const current = () => sources.find(s => s.id === source) || sources[0];
@@ -1012,7 +1013,7 @@ async function openHistory(startSource) {
     if (!help) return null;
     if (compact) {
       return h('div', { class: 'history-hint' },
-        h('span', {}, icon('globe'), `Save more from ${src.name} with the browser extension.`),
+        h('span', {}, icon('upload'), `Exported again? Import the new .zip to update.`),
         help.importable ? h('button', { class: 'chip-btn', onclick: (e) => importExport(e.currentTarget) }, icon('upload'), 'Import export') : null);
     }
     return h('div', { class: 'history-empty' },
@@ -1021,7 +1022,7 @@ async function openHistory(startSource) {
       h('ol', { class: 'he-steps' }, help.steps.map(([b, s]) => h('li', {}, h('b', {}, b), h('span', {}, s)))),
       h('div', { class: 'row-buttons' },
         help.importable ? h('button', { class: 'btn primary', style: { flex: 'none' }, onclick: (e) => importExport(e.currentTarget) }, icon('upload'), 'Import export (.zip)') : null,
-        h('button', { class: 'btn', onclick: () => { closeOverlay(); openSettings('browser'); } }, icon('globe'), 'Set up the extension')));
+        h('button', { class: 'btn ghost', onclick: () => { closeOverlay(); openSettings('browser'); } }, 'About the extension')));
   };
 
   const showList = async () => {
@@ -1287,11 +1288,34 @@ async function openSettings(focus) {
               : 'Wispr Flow, Superwhisper, Aqua and Windows voice typing (Win+H) all type straight into your draft. Click in the prompt and talk.')),
           app ? h('span', { class: 'status-pill ok' }, icon('check'), 'Detected') : h('span', { class: 'status-pill idle' }, 'Win+H'))),
 
-      group('globe', 'Browser extension',
+      group('smile', 'Chip',
+        toggleRow('showPet', 'Show Chip on your desktop', 'Click Chip to send your draft to any open AI app. Drop files, images, links or text on it to collect them. Hides during fullscreen apps.'),
+        st.showPet ? toggleRow('petHints', 'Chip suggestions', 'Chip offers to paste your draft when you switch to an AI app, and to keep screenshots you take. One click, or ignore it.') : null),
+
+      group('send', 'Sending',
+        toggleRow('shrinkImages', 'Shrink huge screenshots', 'AI apps scale big images down anyway. This makes uploads faster.'),
+        toggleRow('terminalPaths', 'Claude Code in a terminal: send files as @paths', 'Claude Code reads files by path, which is more reliable than pasting images.'),
+        toggleRow('restoreClipboard', 'Put my clipboard back afterwards', 'Whatever you had copied before is restored after sending.'),
+        selectRow('Paste speed', 'Pause between each pasted item', st.pasteDelayMs, [[250, 'Fast'], [450, 'Normal'], [900, 'Slow, for laggy apps']], v => save({ pasteDelayMs: Number(v) }))),
+
+      group('sliders', 'General',
+        toggleRow('startWithWindows', 'Start with Windows', 'Runs quietly in the tray so your shortcuts always work.'),
+        toggleRow('alwaysOnTop', 'Keep the panel on top'),
+        toggleRow('collectText', 'Background collecting also keeps copied text', 'Off: only screenshots are collected while the panel is hidden.'),
+        selectRow('Theme', null, st.theme || 'system', [['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']], v => save({ theme: v })),
+        h('div', { class: 'setting-row' },
+          h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Drafts folder'),
+            h('div', { class: 'path-box' }, st.dataDir || ''),
+            storage ? h('div', { class: 'sr-sub' }, `${fmtBytes(storage.bytes)} in ${plural(storage.drafts, 'draft')}. Files over 25 MB are linked, not copied${storage.linked ? ` (${storage.linked} linked)` : ''}.`) : null),
+          h('button', { class: 'btn', onclick: () => Host.call('openDataFolder') }, icon('folder'), 'Open'))),
+
+      h('details', { class: 'extras', open: S.extrasOpen || null, ontoggle: (e) => { S.extrasOpen = e.currentTarget.open; } },
+        h('summary', {}, icon('chevronRight'), 'Extras', h('span', { class: 'muted' }, 'Coding agents, browser extension')),
+      group('globe', 'Browser extension (optional)',
         h('div', { class: 'setting-row col' },
           h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' } },
-            h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Collect from any website'),
-              h('div', { class: 'sr-sub' }, 'Right-click a selection, image, link or page and choose "Add to Chipmunk". On ChatGPT, Claude and Gemini, "Save this chat" keeps the whole conversation for Past chats. Works in Chrome, Edge and Brave.')),
+            h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Right-click to add from websites'),
+              h('div', { class: 'sr-sub' }, 'You don\'t need it: copying from a browser already keeps the page link. The extension adds right-click "Add to Chipmunk" and one-click "Save this chat" on ChatGPT, Claude and Gemini.')),
             st.usedExtension ? h('span', { class: 'status-pill ok' }, icon('check'), 'Connected') : h('span', { class: 'status-pill idle' }, 'Not set up')),
           h('ol', { class: 'steps' },
             h('li', {}, 'Open ', h('b', {}, 'chrome://extensions'), ' (or ', h('b', {}, 'edge://extensions'), ') and turn on ', h('b', {}, 'Developer mode'), '.'),
@@ -1311,30 +1335,7 @@ async function openSettings(focus) {
           agent ? h('div', { class: 'sr-sub', style: { fontWeight: 600 } }, 'Codex') : null,
           agent ? codeBox(agent.codex) : null,
           agent ? h('div', { class: 'sr-sub', style: { fontWeight: 600 } }, 'Antigravity, Cursor, Claude Desktop and other MCP apps') : null,
-          agent ? codeBox(agent.json) : null)),
-
-      group('smile', 'Chip',
-        toggleRow('showPet', 'Show Chip on your desktop', 'Click Chip to send your draft to any open AI app. Drop files, images, links or text on it to collect them. Hides during fullscreen apps.'),
-        st.showPet ? toggleRow('petHints', 'Chip suggestions', 'Chip offers to paste your draft when you switch to an AI app, and to keep screenshots you take. One click, or ignore it.') : null),
-
-      group('send', 'Sending',
-        toggleRow('shrinkImages', 'Shrink huge screenshots', 'AI apps scale big images down anyway. This makes uploads faster.'),
-        toggleRow('terminalPaths', 'Claude Code in a terminal: send files as @paths', 'Claude Code reads files by path, which is more reliable than pasting images.'),
-        toggleRow('restoreClipboard', 'Put my clipboard back afterwards', 'Whatever you had copied before is restored after sending.'),
-        selectRow('Paste speed', 'Pause between each pasted item', st.pasteDelayMs, [[250, 'Fast'], [450, 'Normal'], [900, 'Slow, for laggy apps']], v => save({ pasteDelayMs: Number(v) }))),
-
-      group('scissors', 'Capture',
-        toggleRow('collectText', 'Collect mode also grabs copied text', 'Off: only screenshots are collected.')),
-
-      group('sliders', 'General',
-        toggleRow('startWithWindows', 'Start with Windows', 'Runs quietly in the tray so your shortcuts always work.'),
-        toggleRow('alwaysOnTop', 'Keep the panel on top'),
-        selectRow('Theme', null, st.theme || 'system', [['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']], v => save({ theme: v })),
-        h('div', { class: 'setting-row' },
-          h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Drafts folder'),
-            h('div', { class: 'path-box' }, st.dataDir || ''),
-            storage ? h('div', { class: 'sr-sub' }, `${fmtBytes(storage.bytes)} in ${plural(storage.drafts, 'draft')}. Files over 25 MB are linked, not copied${storage.linked ? ` (${storage.linked} linked)` : ''}.`) : null),
-          h('button', { class: 'btn', onclick: () => Host.call('openDataFolder') }, icon('folder'), 'Open'))),
+          agent ? codeBox(agent.json) : null))),
 
       h('div', { class: 'muted', style: { fontSize: '11.5px', textAlign: 'center', padding: '6px 0 0' } }, `Chipmunk ${st.version || ''} · open source · your drafts are plain files you own`));
   };
@@ -1354,7 +1355,8 @@ async function openSettings(focus) {
     if (S.overlay && S.overlay.type === 'settings') drawBody();
   } catch (e) { toast(e.message, 'error'); }
   if (focus) {
-    const target = body.querySelector(`[data-group="${focus === 'browser' ? 'browser extension' : focus}"]`);
+    if (focus === 'browser') { const x = body.querySelector('details.extras'); if (x) x.open = true; }
+    const target = body.querySelector(`[data-group="${focus === 'browser' ? 'browser extension (optional)' : focus}"]`);
     if (target) target.scrollIntoView({ block: 'start' });
   }
 }
@@ -1492,8 +1494,6 @@ function bind() {
   $('#btn-new').append(icon('plus'));
   $('#btn-more').append(icon('more'));
   $('#btn-settings').append(icon('settings'));
-  el.copyText.prepend(icon('copy'));
-  el.copyFiles.prepend(icon('paperclip'));
   el.dropCard.prepend(icon('upload'));
 
   $('#btn-drafts').addEventListener('click', openDrafts);
@@ -1525,14 +1525,12 @@ function bind() {
     renderCollect();
     try {
       await Host.call('setCollect', { on: S.collect });
-      toast(S.collect ? 'Collecting: every screenshot you take now lands in this draft' : 'Stopped collecting screenshots');
+      toast(S.collect ? 'Screenshots keep landing in this draft, even with the panel hidden' : 'Screenshots go in only while the panel is open');
     } catch (e) { toast(e.message, 'error'); }
   });
 
   el.send.addEventListener('click', () => (S.target ? send('paste') : openSendMenu()));
   el.sendMore.addEventListener('click', openSendMenu);
-  el.copyText.addEventListener('click', () => send('copyText'));
-  el.copyFiles.addEventListener('click', () => send('copyFiles'));
   window.addEventListener('resize', autosize);
   setInterval(() => { renderSaveState(); }, 30000);
 
@@ -1540,6 +1538,15 @@ function bind() {
     if (S.d && d.id === S.d.id) applyDraft(d, { replaceText: !!d.textChanged });
   });
   Host.on('openDraft', (d) => openDraft(d.id, d));
+  Host.on('freshDraft', async (r) => {
+    S.showChecklist = false;
+    await openDraft(r.draft.id, r.draft);
+    el.editor.focus();
+    toast('Fresh draft. Your last one was sent.', null, {
+      label: 'Open it',
+      run: async () => { await Host.call('setCurrent', { id: r.previousId }); openDraft(r.previousId); },
+    });
+  });
   Host.on('toast', (t) => toast(t.text, t.kind));
   Host.on('collect', (on) => { S.collect = on; renderCollect(); });
   Host.on('historyChanged', () => { if (S.overlay && S.overlay.type === 'history' && S.overlay.refresh) S.overlay.refresh(); });

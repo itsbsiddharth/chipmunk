@@ -291,6 +291,7 @@ namespace Chipmunk
         {
             var fg = Native.GetForegroundWindow();
             if (IsExternal(fg)) SetTarget(fg);
+            if (!win.Visible) StartFreshIfSent();
             if (!win.Visible) win.Show();
             if (win.WindowState == FormWindowState.Minimized) win.WindowState = FormWindowState.Normal;
             win.Activate();
@@ -298,6 +299,29 @@ namespace Chipmunk
             panelWasLastForeground = true;
             win.Emit("target", TargetDto(DefaultTarget()));
             win.FocusPage();
+        }
+
+        /// <summary>Like a chat box: once a draft has been sent, the next time you open the panel
+        /// you get a clean one. The sent draft stays in Drafts and can be reopened in one click.</summary>
+        void StartFreshIfSent()
+        {
+            try
+            {
+                var cur = Current;
+                if (cur == null || cur.status != "sent" || cur.sends.Count == 0) return;
+                DateTime at;
+                if (!DateTime.TryParse(cur.sends[cur.sends.Count - 1].at, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out at)) return;
+                if (DateTime.UtcNow - at.ToUniversalTime() < TimeSpan.FromSeconds(20)) return;
+                var blank = Store.All.OrderByDescending(x => x.updated, StringComparer.Ordinal).Take(12).FirstOrDefault(x =>
+                    x.id != cur.id && x.status != "sent" && x.attachments.Count == 0 && x.checklist.Count == 0
+                    && string.IsNullOrWhiteSpace(x.title) && string.IsNullOrWhiteSpace(Store.ReadText(x)));
+                var d = blank ?? Store.Create("");
+                Settings.currentDraft = d.id;
+                Settings.Save();
+                win.Emit("freshDraft", new Dictionary<string, object> { { "draft", DraftDto(d) }, { "previousId", cur.id }, { "previousTitle", cur.title } });
+                UpdatePet();
+            }
+            catch (Exception e) { Log.Error(e); }
         }
 
         public void ShowView(string view)
@@ -796,7 +820,10 @@ namespace Chipmunk
                 if (grab != null) { FinishGrab(); return; }
                 // Password managers and other private sources mark their clipboard entries; respect that.
                 if (ClipboardService.IsFromMonitorExcludedSource()) return;
-                if (snip == null && !collect) { OfferImage(); return; }
+                // While the panel is open you're composing, so screenshots go straight in.
+                // With Collect on, they keep going in while it's hidden too.
+                bool auto = collect || win.Visible;
+                if (snip == null && !auto) { OfferImage(); return; }
                 var c = ClipboardService.Read();
                 if (snip != null)
                 {
@@ -810,10 +837,10 @@ namespace Chipmunk
                     Notify(a == null ? "That screenshot is already in this draft." : "Screenshot added to " + Quote(d.title) + " · " + Plural(d.attachments.Count(x => x.kind == "image"), "image"));
                     return;
                 }
-                if (collect)
+                if (auto)
                 {
                     var d = Current;
-                    string source = "Collected" + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
+                    string source = (collect ? "Collected" : "Screenshot") + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
                     if (c.ImagePng != null && (c.Files == null || c.Files.Length == 0))
                     {
                         var a = Store.AddImage(d, c.ImagePng, "image/png", Store.ScreenshotName(), source, null);
@@ -821,7 +848,7 @@ namespace Chipmunk
                         Collected(d);
                         Notify("Collected screenshot into " + Quote(d.title) + " · " + Plural(d.attachments.Count(x => x.kind == "image"), "image"));
                     }
-                    else if (Settings.collectText && !string.IsNullOrWhiteSpace(c.Text) && (c.Files == null || c.Files.Length == 0))
+                    else if (collect && Settings.collectText && !string.IsNullOrWhiteSpace(c.Text) && (c.Files == null || c.Files.Length == 0))
                     {
                         var a = Store.AddText(d, c.Text, lastTarget != IntPtr.Zero ? SourceLabel(lastTarget) : "Copied text", c.SourceUrl, null);
                         if (a == null) return;
