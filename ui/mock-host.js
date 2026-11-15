@@ -37,7 +37,8 @@ export class MockHost {
       collectText: false, startWithWindows: false, alwaysOnTop: false, theme: 'system',
       showPet: true, petHints: true, usedExtension: false,
       dictation: new URLSearchParams(location.search).has('wispr') ? { app: 'Wispr Flow', hint: 'hold Ctrl+Win' } : { app: null, hint: 'Win+H' },
-      onboarded: new URLSearchParams(location.search).has('onboarded'), dataDir: 'C:\\Users\\you\\Documents\\Chipmunk', version: '1.1.0 (preview)',
+      onboarded: new URLSearchParams(location.search).has('onboarded'), dataDir: 'C:\\Users\\you\\Documents\\Chipmunk', version: '1.3.0', autoUpdate: true, installed: true,
+      update: new URLSearchParams(location.search).has('update') ? { version: '1.4.0', canInstall: true } : null,
     };
     this.collect = false;
     this.drafts = new Map();
@@ -243,6 +244,8 @@ export class MockHost {
         }
         return { draft: this.copy(d), message: args.how === 'copyText' ? 'Copied the text' : 'Copied 3 files. Paste them anywhere.' };
       }
+      case 'checkUpdate': await wait(500); return { update: null, version: this.settings.version };
+      case 'applyUpdate': await wait(800); this.emit('toast', { text: '(mock) Would download and install the update' }); return true;
       case 'targets': return this.windows;
       case 'historySources':
         return [

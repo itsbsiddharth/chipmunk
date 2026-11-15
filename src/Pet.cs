@@ -234,50 +234,8 @@ namespace Chipmunk
         void ShowMenu()
         {
             ClearBubble();
-            var menu = new ContextMenuStrip { Renderer = new ChipMenuRenderer(), ShowImageMargin = false, Font = new Font("Segoe UI", 9.75f) };
-            menu.Padding = new Padding(4);
-            string title = string.IsNullOrWhiteSpace(draftTitle) ? "Untitled draft" : draftTitle;
-            if (title.Length > 38) title = title.Substring(0, 36) + "…";
-            menu.Items.Add(new ToolStripLabel(title + (count > 0 ? "  ·  " + count + " collected" : "")) { ForeColor = Color.FromArgb(149, 144, 136), Margin = new Padding(6, 4, 6, 4) });
-            menu.Items.Add(new ToolStripMenuItem("Open draft", null, (s, e) => core.ShowPanel()) { Font = new Font("Segoe UI Semibold", 9.75f) });
-
-            var targets = core.SendTargets();
-            var ai = targets.FindAll(t => (bool)t["ai"]);
-            var other = targets.FindAll(t => !(bool)t["ai"]);
-            if (targets.Count > 0) menu.Items.Add(new ToolStripSeparator());
-            foreach (var t in ai.GetRange(0, Math.Min(6, ai.Count))) menu.Items.Add(TargetItem(t, true));
-            if (other.Count > 0)
-            {
-                var more = new ToolStripMenuItem(ai.Count > 0 ? "Send to another window" : "Send to…");
-                foreach (var t in other) more.DropDownItems.Add(TargetItem(t, false));
-                more.DropDown.Renderer = menu.Renderer;
-                menu.Items.Add(more);
-            }
-            if (targets.Count == 0) menu.Items.Add(new ToolStripLabel("Open ChatGPT, Claude or another AI app to send") { ForeColor = Color.FromArgb(149, 144, 136) });
-
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Snip into draft", null, (s, e) => core.StartSnipFromUi());
-            menu.Items.Add("Past chats", null, (s, e) => core.ShowView("history"));
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Hide Chip", null, (s, e) => core.SetPetVisible(false));
-            menu.Closed += (s, e) => BeginInvoke((Action)menu.Dispose);
-            var at = PointToScreen(new Point((int)(petRect.X + petRect.Width / 2), (int)petRect.Y));
-            menu.Show(at, ToolStripDropDownDirection.AboveLeft);
-            ChipMenuRenderer.Round(menu);
-        }
-
-        ToolStripMenuItem TargetItem(Dictionary<string, object> t, bool primary)
-        {
-            string label = (string)t["label"];
-            string title = (string)t["title"];
-            string text = primary ? "Send to " + label : label;
-            if (!title.Equals(label, StringComparison.OrdinalIgnoreCase))
-            {
-                string sub = title.Length > 34 ? title.Substring(0, 32) + "…" : title;
-                text += "   " + sub;
-            }
-            long hwnd = long.Parse((string)t["hwnd"]);
-            return new ToolStripMenuItem(text, null, (s, e) => core.SendCurrentTo(new IntPtr(hwnd)));
+            var r = RectangleToScreen(Rectangle.Round(petRect));
+            core.ShowMenu(new Rectangle(r.X + (int)(10 * scale), r.Y + (int)(12 * scale), r.Width - (int)(20 * scale), r.Height - (int)(12 * scale)), false);
         }
 
         // ---------------- drawing ----------------
@@ -459,61 +417,6 @@ namespace Chipmunk
         {
             return d != null && (d.GetDataPresent(DataFormats.FileDrop) || d.GetDataPresent(DataFormats.Bitmap) || d.GetDataPresent("PNG")
                 || d.GetDataPresent(DataFormats.UnicodeText) || d.GetDataPresent(DataFormats.Text) || d.GetDataPresent("UniformResourceLocatorW"));
-        }
-    }
-
-    /// <summary>Chip's menu in the app's warm palette, with rounded Windows 11 corners.</summary>
-    class ChipMenuRenderer : ToolStripProfessionalRenderer
-    {
-        static readonly Color Bg = Color.FromArgb(255, 255, 255);
-        static readonly Color Hover = Color.FromArgb(241, 239, 233);
-        static readonly Color Line = Color.FromArgb(230, 226, 217);
-        static readonly Color Ink = Color.FromArgb(29, 27, 24);
-
-        [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int value, int size);
-
-        public ChipMenuRenderer() : base(new Colors()) { RoundedEdges = true; }
-
-        public static void Round(ToolStripDropDown d)
-        {
-            try { int round = 2; DwmSetWindowAttribute(d.Handle, 33, ref round, 4); } catch { }
-        }
-
-        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
-        {
-            var r = new Rectangle(2, 0, e.Item.Width - 4, e.Item.Height);
-            using (var b = new SolidBrush(e.Item.Selected && e.Item.Enabled ? Hover : Bg)) e.Graphics.FillRectangle(b, r);
-        }
-
-        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
-        {
-            if (e.Item is ToolStripMenuItem) e.TextColor = Ink;
-            e.TextRectangle = new Rectangle(e.TextRectangle.X + 4, e.TextRectangle.Y, e.TextRectangle.Width, e.TextRectangle.Height);
-            base.OnRenderItemText(e);
-        }
-
-        protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
-        {
-            int y = e.Item.Height / 2;
-            using (var p = new Pen(Line)) e.Graphics.DrawLine(p, 8, y, e.Item.Width - 8, y);
-        }
-
-        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
-        {
-            using (var p = new Pen(Line)) e.Graphics.DrawRectangle(p, 0, 0, e.AffectedBounds.Width - 1, e.AffectedBounds.Height - 1);
-        }
-
-        class Colors : ProfessionalColorTable
-        {
-            public override Color ToolStripDropDownBackground { get { return Bg; } }
-            public override Color ImageMarginGradientBegin { get { return Bg; } }
-            public override Color ImageMarginGradientMiddle { get { return Bg; } }
-            public override Color ImageMarginGradientEnd { get { return Bg; } }
-            public override Color MenuItemSelected { get { return Hover; } }
-            public override Color MenuItemBorder { get { return Hover; } }
-            public override Color MenuBorder { get { return Line; } }
-            public override Color SeparatorDark { get { return Line; } }
-            public override Color SeparatorLight { get { return Bg; } }
         }
     }
 }

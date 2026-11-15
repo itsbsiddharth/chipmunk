@@ -90,6 +90,7 @@ namespace Chipmunk
         public bool showPet = true;
         public int[] petPos;
         public bool petHints = true;              // Chip offers to send drafts and keep screenshots
+        public bool autoUpdate = true;            // check GitHub for a newer Chipmunk now and then
         public bool usedExtension;
 
         /// <summary>Win+Alt shortcuts: they never collide with AltGr (Ctrl+Alt) on international keyboards.</summary>

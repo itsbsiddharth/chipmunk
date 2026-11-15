@@ -55,7 +55,7 @@ namespace Chipmunk
         readonly MessageWindow messages;
         readonly NotifyIcon tray;
         readonly PipeServer pipe;
-        ToolStripMenuItem trayOpen, trayCollect, trayPet;
+        Popover openMenu;
 
         static readonly string[] HotkeyNames = { "toggle", "snip", "grab", "paste" };
         bool hotkeysSuspended;
@@ -110,7 +110,7 @@ namespace Chipmunk
 
             Logo = Brand.Draw(64);
             AppIcon = Brand.MakeIcon(32);
-            toast = new Toast(Logo);
+            toast = new Toast(Logo) { IsDark = () => Settings.DarkMode };
             toast.Activated2 += (s, e) => ShowPanel();
 
             messages = new MessageWindow(this);
@@ -151,6 +151,17 @@ namespace Chipmunk
                 catch (Exception e) { Log.Error("Warm history: " + e.Message); }
             }) { IsBackground = true, Priority = ThreadPriority.Lowest };
             warm.Start();
+
+            Installation.RepairStartup();
+            updater.Found += () => { try { win.BeginInvoke((Action)OnUpdateFound); } catch { } };
+            updateTimer.Tick += (s, e) => { updateTimer.Interval = 6 * 60 * 60 * 1000; CheckForUpdate(false); };
+            if (Settings.autoUpdate && (Installation.IsInstalled || Environment.GetEnvironmentVariable("CHIPMUNK_UPDATE_TEST") != null)) updateTimer.Start();
+            if (args.Contains("--updated"))
+            {
+                var hello = new System.Windows.Forms.Timer { Interval = 2500 };
+                hello.Tick += (s, e) => { hello.Stop(); hello.Dispose(); Notify("Chipmunk is updated to " + Program.Version + "."); };
+                hello.Start();
+            }
 
             ThreadPool.RegisterWaitForSingleObject(showEvent, (st, to) => { try { win.BeginInvoke((Action)ShowPanel); } catch { } }, null, -1, false);
 
@@ -206,34 +217,110 @@ namespace Chipmunk
 
         NotifyIcon BuildTray()
         {
-            var menu = new ContextMenuStrip();
-            trayOpen = new ToolStripMenuItem("Open Chipmunk", null, (s, e) => ShowPanel()) { Font = new Font(SystemFonts.MenuFont, FontStyle.Bold) };
-            menu.Items.Add(trayOpen);
-            menu.Items.Add("New draft", null, (s, e) => { ShowPanel(); NewDraftFromOutside(); });
-            menu.Items.Add("Past chats", null, (s, e) => ShowView("history"));
-            menu.Items.Add("Snip into draft", null, (s, e) => StartSnip(Settings.currentDraft));
-            trayCollect = new ToolStripMenuItem("Collect screenshots") { CheckOnClick = true };
-            trayCollect.Click += (s, e) => SetCollect(trayCollect.Checked);
-            menu.Items.Add(trayCollect);
-            trayPet = new ToolStripMenuItem("Show Chip") { CheckOnClick = true };
-            trayPet.Click += (s, e) => SetPetVisible(trayPet.Checked);
-            menu.Items.Add(trayPet);
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Settings", null, (s, e) => ShowView("settings"));
-            menu.Items.Add("Open drafts folder", null, (s, e) => OpenFolder(Store.Root));
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Quit Chipmunk", null, (s, e) => Quit());
-            var t = new NotifyIcon { Icon = AppIcon, Text = "Chipmunk", Visible = true, ContextMenuStrip = menu };
-            t.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) TogglePanel(); };
-            UpdateTrayText();
+            var t = new NotifyIcon { Icon = AppIcon, Text = "Chipmunk", Visible = true };
+            t.MouseClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left) TogglePanel();
+                else if (e.Button == MouseButtons.Right) ShowMenu(new Rectangle(Cursor.Position, new Size(1, 1)), true);
+            };
             return t;
         }
 
-        void UpdateTrayText()
+        void UpdateTrayText() { }
+
+        // ---------------- Chip and tray menu ----------------
+
+        /// <summary>Opens the menu for Chip (above it) or the tray icon (at the cursor).</summary>
+        public void ShowMenu(Rectangle anchor, bool fromTray)
         {
-            if (trayOpen != null) trayOpen.ShortcutKeyDisplayString = Settings.hotkeys["toggle"];
-            if (trayCollect != null) trayCollect.Checked = collect;
-            if (trayPet != null) trayPet.Checked = Settings.showPet;
+            try
+            {
+                if (openMenu != null && !openMenu.IsDisposed) { openMenu.Close(); openMenu = null; }
+                var center = new Point(anchor.X + anchor.Width / 2, anchor.Y + anchor.Height / 2);
+                var pop = new Popover(BuildMenu(fromTray), Settings.DarkMode, center);
+                openMenu = pop;
+                pop.FormClosed += (s, e) => { if (openMenu == pop) openMenu = null; };
+                var wa = Screen.FromPoint(center).WorkingArea;
+                pop.ShowAt(anchor, true, center.X > wa.Left + wa.Width / 2);
+            }
+            catch (Exception e) { Log.Error(e); }
+        }
+
+        static string KeyHint(string combo) { return string.IsNullOrEmpty(combo) ? null : combo.Replace("+", " "); }
+
+        List<PopItem> BuildMenu(bool fromTray)
+        {
+            var items = new List<PopItem>();
+            var d = Current;
+            string text = Store.ReadText(d) ?? "";
+            var images = d.attachments.Where(a => a.kind == "image" && a.file != null).ToList();
+            int files = d.attachments.Count(a => a.kind == "file"), quotes = d.attachments.Count(a => a.kind == "text"), links = d.attachments.Count(a => a.kind == "link");
+            int words = System.Text.RegularExpressions.Regex.Matches(text, @"\S+").Count;
+            bool hasContent = d.attachments.Any(a => a.include) || words > 0;
+            var parts = new List<string>();
+            if (images.Count > 0) parts.Add(Plural(images.Count, "image"));
+            if (files > 0) parts.Add(Plural(files, "file"));
+            if (quotes + links > 0) parts.Add(Plural(quotes + links, quotes > 0 && links == 0 ? "quote" : links > 0 && quotes == 0 ? "link" : "note"));
+            if (words > 0) parts.Add(Plural(words, "word"));
+            string title = !string.IsNullOrWhiteSpace(d.title) ? d.title : hasContent ? Store.FirstLine(text, 60) : "New draft";
+            if (string.IsNullOrWhiteSpace(title)) title = "Untitled draft";
+            items.Add(new PopItem
+            {
+                Kind = PopItem.Kinds.Card, Label = title,
+                Sub = hasContent ? string.Join(" · ", parts) : "Empty. Take a screenshot or type to start",
+                Thumbs = images.Take(3).Select(a => (Image)UiKit.Thumb(Store.FilePath(d, a), 96, 74)).Where(x => x != null).ToList(),
+                Run = ShowPanel,
+            });
+
+            if (updater.Available)
+                items.Add(new PopItem { Label = updater.CanInstall ? "Update to Chipmunk " + updater.Latest : "Chipmunk " + updater.Latest + " is out", Sub = updater.CanInstall ? "Takes a few seconds, your drafts stay" : "Open the download page", Glyph = "download", Strong = true, Run = ApplyUpdate });
+
+            var targets = Targets();
+            var ai = targets.Where(t => (bool)t["ai"]).Take(5).ToList();
+            var other = targets.Where(t => !(bool)t["ai"]).ToList();
+            items.Add(PopItem.Head(hasContent ? "Send to" : "Send to (add something first)"));
+            if (targets.Count == 0) items.Add(new PopItem { Kind = PopItem.Kinds.Note, Label = "Open ChatGPT, Claude or Claude Code and it shows up here." });
+            foreach (var t in ai) items.Add(TargetRow(t, hasContent));
+            if (other.Count > 0)
+                items.Add(new PopItem
+                {
+                    Label = ai.Count > 0 ? "Other windows" : "Open windows", Glyph = "window",
+                    Children = other.Select(t => TargetRow(t, hasContent)).ToList(), Expanded = ai.Count == 0,
+                });
+
+            items.Add(PopItem.Sep());
+            items.Add(new PopItem { Label = "Open Chipmunk", Glyph = "window", Hint = KeyHint(Settings.hotkeys["toggle"]), Run = ShowPanel });
+            items.Add(new PopItem { Label = "Snip into draft", Glyph = "scissors", Hint = KeyHint(Settings.hotkeys["snip"]), Run = () => StartSnip(Settings.currentDraft) });
+            items.Add(new PopItem { Label = "Past chats", Glyph = "clock", Run = () => ShowView("history") });
+            if (fromTray)
+            {
+                items.Add(new PopItem { Label = "New draft", Glyph = "plus", Run = () => { ShowPanel(); NewDraftFromOutside(); } });
+                items.Add(PopItem.Sep());
+                items.Add(new PopItem { Kind = PopItem.Kinds.Toggle, Label = "Keep collecting when hidden", On = collect, Run = () => SetCollect(!collect) });
+                items.Add(new PopItem { Kind = PopItem.Kinds.Toggle, Label = "Show Chip", On = Settings.showPet, Run = () => SetPetVisible(!Settings.showPet) });
+                items.Add(PopItem.Sep());
+                items.Add(new PopItem { Label = "Settings", Glyph = "sliders", Run = () => ShowView("settings") });
+                items.Add(new PopItem { Label = "Quit Chipmunk", Glyph = "power", Muted = true, Run = Quit });
+            }
+            else
+            {
+                items.Add(PopItem.Sep());
+                items.Add(new PopItem { Label = "Hide Chip", Glyph = "eyeOff", Muted = true, Run = () => SetPetVisible(false) });
+            }
+            return items;
+        }
+
+        PopItem TargetRow(Dictionary<string, object> t, bool enabled)
+        {
+            var h = new IntPtr(long.Parse((string)t["hwnd"], CultureInfo.InvariantCulture));
+            string label = (string)t["label"], title = (string)t["title"], app = (string)t["app"];
+            string sub = !title.Equals(label, StringComparison.OrdinalIgnoreCase) ? title : !app.Equals(label, StringComparison.OrdinalIgnoreCase) ? app : (bool)t["terminal"] ? "Terminal" : "Desktop app";
+            return new PopItem
+            {
+                Label = label, Sub = sub, Strong = true, Enabled = enabled,
+                Icon = UiKit.AppIcon(h), Glyph = (bool)t["terminal"] ? "terminal" : "send",
+                Run = () => SendCurrentTo(h),
+            };
         }
 
         void NewDraftFromOutside()
@@ -964,6 +1051,12 @@ namespace Chipmunk
                 case "open":
                     ShowPanel();
                     return new Dictionary<string, object> { { "ok", true } };
+                case "menu": // used by tests and screenshots
+                {
+                    var wa = Screen.PrimaryScreen.WorkingArea;
+                    ShowMenu(Json.Bool(req, "tray") ? new Rectangle(wa.Right - 140, wa.Bottom - 2, 1, 1) : new Rectangle(wa.Right - 120, wa.Bottom - 110, 90, 100), Json.Bool(req, "tray"));
+                    return new Dictionary<string, object> { { "ok", true } };
+                }
                 case "add":
                     return AddFromExtension(Json.Obj(req.ContainsKey("item") ? req["item"] : null));
                 case "saveChat":
@@ -1271,6 +1364,7 @@ namespace Chipmunk
                 { "showPet", Settings.showPet }, { "petHints", Settings.petHints }, { "dictation", DictationDto() },
                 { "usedExtension", Settings.usedExtension }, { "dictationApp", RunningDictationApp() },
                 { "startWithWindows", Settings.StartWithWindows }, { "dataDir", Store.Root }, { "version", Program.Version },
+                { "autoUpdate", Settings.autoUpdate }, { "installed", Installation.IsInstalled }, { "update", UpdateDto() },
                 { "hotkeyErrors", hotkeyErrors ?? new Dictionary<string, string>() },
             };
         }
@@ -1444,6 +1538,8 @@ namespace Chipmunk
                 case "agentInfo": return AgentInfo();
                 case "browserInfo": return BrowserInfo();
                 case "storageInfo": return Task.Run(() => (object)StorageInfo());
+                case "checkUpdate": return CheckUpdateNowAsync();
+                case "applyUpdate": return ApplyUpdateAsync();
                 case "copyToClipboard":
                     ClipboardService.SetText(Json.Str(a, "text") ?? "", false);
                     return true;
@@ -1598,6 +1694,11 @@ namespace Chipmunk
                 pet.SetWanted(Settings.showPet);
             }
             if (Json.Has(p, "petHints")) Settings.petHints = Json.Bool(p, "petHints");
+            if (Json.Has(p, "autoUpdate"))
+            {
+                Settings.autoUpdate = Json.Bool(p, "autoUpdate");
+                if (Settings.autoUpdate) { updateTimer.Interval = 3000; updateTimer.Start(); } else updateTimer.Stop();
+            }
             if (Json.Has(p, "startWithWindows"))
             {
                 try { Settings.StartWithWindows = Json.Bool(p, "startWithWindows"); }
@@ -1613,6 +1714,67 @@ namespace Chipmunk
         {
             try { Process.Start(new ProcessStartInfo("explorer.exe", "\"" + path + "\"") { UseShellExecute = true }); }
             catch (Exception e) { Log.Error(e); }
+        }
+
+        // ---------------- updates ----------------
+
+        readonly Updater updater = new Updater();
+        readonly System.Windows.Forms.Timer updateTimer = new System.Windows.Forms.Timer { Interval = 20000 };
+        bool updateAnnounced;
+
+        async void CheckForUpdate(bool manual)
+        {
+            try { await updater.Check(); }
+            catch (Exception e) { Log.Info("Update check: " + e.Message); }
+        }
+
+        void OnUpdateFound()
+        {
+            win.Emit("update", UpdateDto());
+            if (updateAnnounced) return;
+            updateAnnounced = true;
+            if (pet.IsShowing && updater.CanInstall)
+                pet.Say("Chipmunk " + updater.Latest + " is ready.", 9000, () => ApplyUpdate(), "Click to update (takes a few seconds)");
+        }
+
+        Dictionary<string, object> UpdateDto()
+        {
+            return updater.Available
+                ? new Dictionary<string, object> { { "version", updater.Latest }, { "canInstall", updater.CanInstall }, { "url", updater.PageUrl } }
+                : null;
+        }
+
+        async void ApplyUpdate()
+        {
+            try { await ApplyUpdateAsync(); }
+            catch (Exception e) { Notify(e is InvalidOperationException ? e.Message : "Couldn't update: " + e.Message, true); }
+        }
+
+        async Task<object> ApplyUpdateAsync()
+        {
+            if (!updater.CanInstall)
+            {
+                if (updater.PageUrl != null) Process.Start(new ProcessStartInfo(updater.PageUrl) { UseShellExecute = true });
+                return false;
+            }
+            Notify("Downloading Chipmunk " + updater.Latest + "…");
+            await updater.DownloadAndRun();
+            Quit();
+            return true;
+        }
+
+        async Task<object> CheckUpdateNowAsync()
+        {
+            bool found;
+            try { found = await updater.Check(); }
+            catch (Exception e) { throw new InvalidOperationException("Couldn't reach GitHub to check for updates (" + e.Message + ")."); }
+            return new Dictionary<string, object> { { "update", found ? UpdateDto() : null }, { "version", Program.Version } };
+        }
+
+        /// <summary>Called from a background thread when the installer asks Chipmunk to quit.</summary>
+        public void QuitFromOutside()
+        {
+            try { win.BeginInvoke((Action)Quit); } catch { }
         }
 
         public void Quit()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -8,7 +8,7 @@ namespace Chipmunk
 {
     static class Program
     {
-        public const string Version = "1.2.0";
+        public const string Version = "1.3.0";
 
         [STAThread]
         static int Main(string[] args)
@@ -49,6 +49,10 @@ namespace Chipmunk
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            // Settings > Apps > Chipmunk > Uninstall runs this.
+            if (args.Contains("--uninstall"))
+                return Installation.Uninstall(args.Contains("--quiet"));
+
             if (args.Length >= 2 && args[0] == "--harness")
             {
                 Application.Run(new Harness(args[1]));
@@ -59,6 +63,7 @@ namespace Chipmunk
             bool created;
             using (var mutex = new Mutex(true, @"Local\Chipmunk.SingleInstance" + suffix, out created))
             using (var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Chipmunk.Show" + suffix))
+            using (var quitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, InstallInfo.QuitEvent + suffix))
             {
                 if (!created)
                 {
@@ -71,6 +76,8 @@ namespace Chipmunk
                 AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Error(e.ExceptionObject as Exception);
                 Log.Info("Starting Chipmunk " + Version + " " + string.Join(" ", args));
                 var core = new AppCore(showEvent, args);
+                // The installer and updater ask a running Chipmunk to quit through this event.
+                ThreadPool.RegisterWaitForSingleObject(quitEvent, (st, to) => core.QuitFromOutside(), null, -1, true);
                 Application.Run(core.Context);
                 GC.KeepAlive(mutex);
             }

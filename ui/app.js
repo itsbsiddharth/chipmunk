@@ -104,6 +104,7 @@ const el = {
   estimate: $('#estimate'),
   send: $('#btn-send'),
   sendMore: $('#btn-send-more'),
+  update: $('#btn-update'),
   overlay: $('#overlay-root'),
   toasts: $('#toasts'),
   drop: $('#drop'),
@@ -603,6 +604,26 @@ function renderFooter() {
   el.send.disabled = !hasContent;
   el.sendMore.disabled = !hasContent;
   el.send.title = t ? `Switch to "${t.title}" and paste everything (Ctrl+Enter)` : 'Pick where to send';
+}
+
+// ---------- updates ----------
+function renderUpdate() {
+  const u = S.update;
+  el.update.hidden = !u;
+  if (!u) return;
+  el.update.replaceChildren(icon('download'), h('span', {}, `Update to ${u.version}`));
+  el.update.title = u.canInstall ? `Chipmunk ${u.version} is ready. Installs in a few seconds; your drafts stay.` : `Chipmunk ${u.version} is out. Opens the download page.`;
+}
+
+async function applyUpdate() {
+  if (!S.update) return;
+  await flushSaves();
+  el.update.disabled = true;
+  el.update.replaceChildren(h('span', {}, 'Updating…'));
+  try { await Host.call('applyUpdate'); }
+  catch (e) { toast(e.message, 'error'); }
+  el.update.disabled = false;
+  renderUpdate();
 }
 
 // ---------- sending ----------
@@ -1300,6 +1321,21 @@ async function openSettings(focus) {
 
       group('sliders', 'General',
         toggleRow('startWithWindows', 'Start with Windows', 'Runs quietly in the tray so your shortcuts always work.'),
+        toggleRow('autoUpdate', 'Keep Chipmunk up to date', 'Checks GitHub for a new version about once a day. That check is the only thing Chipmunk sends over the internet.'),
+        h('div', { class: 'setting-row' },
+          h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, `Chipmunk ${st.version || ''}`),
+            h('div', { class: 'sr-sub' }, S.update ? `Version ${S.update.version} is available.` : (st.installed ? 'Installed for your Windows account.' : 'Running from a folder, not installed.'))),
+          S.update
+            ? h('button', { class: 'btn accent', onclick: applyUpdate }, icon('download'), S.update.canInstall ? 'Update now' : 'Get it')
+            : h('button', { class: 'btn', onclick: async (e) => {
+                const b = e.currentTarget; b.disabled = true;
+                try {
+                  const r = await Host.call('checkUpdate');
+                  if (r.update) { S.update = r.update; renderUpdate(); drawBody(); }
+                  else toast(`You're on the latest version (${r.version}).`);
+                } catch (err) { toast(err.message, 'error'); }
+                b.disabled = false;
+              } }, 'Check for updates')),
         toggleRow('alwaysOnTop', 'Keep the panel on top'),
         toggleRow('collectText', 'Background collecting also keeps copied text', 'Off: only screenshots are collected while the panel is hidden.'),
         selectRow('Theme', null, st.theme || 'system', [['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']], v => save({ theme: v })),
@@ -1552,6 +1588,8 @@ function bind() {
   Host.on('historyChanged', () => { if (S.overlay && S.overlay.type === 'history' && S.overlay.refresh) S.overlay.refresh(); });
   Host.on('target', (t) => { S.target = t; renderFooter(); });
   Host.on('settings', (st) => { S.settings = st; applyTheme(); renderAll(); });
+  Host.on('update', (u) => { S.update = u; renderUpdate(); });
+  el.update.addEventListener('click', applyUpdate);
   Host.on('focusEditorEnd', () => { closeOverlay(); focusEditorEnd(); });
   Host.on('shown', () => {
     if (!S.overlay) el.editor.focus();
@@ -1571,6 +1609,8 @@ async function init() {
   S.drafts = r.drafts;
   S.target = r.target;
   S.collect = r.collect;
+  S.update = r.settings.update || null;
+  renderUpdate();
   applyTheme();
   await openDraft(r.current.id, r.current);
   requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('app').classList.remove('preload')));

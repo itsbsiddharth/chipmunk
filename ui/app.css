@@ -119,6 +119,15 @@ button { cursor: pointer; }
 .title-input:focus { outline: none; background: var(--surface); border-color: var(--line-strong); }
 .title-input::placeholder { color: var(--ink-3); font-weight: 500; }
 
+.update-pill {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  height: 28px; padding: 0 11px 0 9px; margin-right: 2px; border-radius: 14px;
+  border: 1px solid transparent; background: var(--accent-soft); color: var(--accent-ink);
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s;
+}
+.update-pill:hover { background: var(--accent); color: #fff; }
+.update-pill .icon { width: 14px; height: 14px; }
+.update-pill[hidden] { display: none; }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; flex: none;

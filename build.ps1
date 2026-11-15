@@ -28,7 +28,7 @@ function Compile([bool]$withIcon) {
         "$fw\WPF\PresentationCore.dll", "$fw\WPF\WindowsBase.dll",
         "$root\lib\Microsoft.Web.WebView2.Core.dll", "$root\lib\Microsoft.Web.WebView2.WinForms.dll"
     ) | ForEach-Object { "/r:$_" }
-    $cscArgs = @('/nologo', '/noconfig', '/target:winexe', '/platform:x64', '/optimize+', '/langversion:latest',
+    $cscArgs = @('/nologo', '/noconfig', '/codepage:65001', '/target:winexe', '/platform:x64', '/optimize+', '/langversion:latest',
         "/lib:$fw", "/out:$exe", "/win32manifest:$root\src\app.manifest") + $refs
     if ($withIcon) { $cscArgs += "/win32icon:$icon" }
     $cscArgs += (Get-ChildItem "$root\src\*.cs" | ForEach-Object { $_.FullName })
