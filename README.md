@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/itsbsiddharth/chipmunk/releases/latest"><b>Download for Windows</b></a> ·
+  <a href="https://chipmunk.bsid.dev"><b>Download for Windows</b></a> ·
   <a href="#install">Install</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#past-chats">Past chats</a> ·
@@ -73,9 +73,9 @@ Three steps: **open it** (`Win+Alt+P`, or click Chip), **throw things in**, **se
 
 Chip is the chipmunk that sits at the edge of your screen. It's there to save you trips back to the panel:
 
-- **Click Chip to send.** It lists your open AI apps; pick one and your draft goes in.
+- **Click Chip for its menu.** Your draft sits at the top, with image thumbnails and counts. Below it, **Send to** lists each open AI app with its real icon, then Other windows, Open Chipmunk, Snip into draft, Past chats and Hide Chip. Arrows, Enter and Esc work. Right-click the tray icon for the same menu, plus New draft, **Keep collecting when hidden**, **Show Chip**, Settings and Quit.
 - **It speaks up when it can help.** Switch to ChatGPT with a draft ready and Chip offers to paste it ("5 items ready for ChatGPT. Click me to paste it in"). Take a screenshot while the panel is closed and it offers to keep it. One click, or ignore it and the bubble fades.
-- **It tells you what happened** ("Sent 2 images + your text to Claude") instead of popping notifications.
+- **It tells you what happened** ("Sent 2 images + your text to Claude") instead of popping notifications. When Chip is hidden, notifications follow your light or dark theme.
 - **Drop anything on it** to collect it. The badge shows how much is in your draft.
 
 Chip hides during fullscreen games, videos and presentations, and uses almost no CPU while idle. Don't want it? Turn off **Settings → Chip**, or just its suggestions.
@@ -123,11 +123,23 @@ Then just say **"use my Chipmunk draft"**. **Settings → AI agents** shows thes
 
 ## Install
 
-1. Download **`Chipmunk-win-x64.zip`** from the [latest release](https://github.com/itsbsiddharth/chipmunk/releases/latest) and unzip it anywhere, for example `C:\Apps\Chipmunk`.
-2. Run **`Chipmunk.exe`**. Windows may say it "protected your PC", because the app isn't code-signed yet. Click **More info → Run anyway**.
-3. Chip appears in the corner and a short welcome shows the shortcuts. That's it.
+1. Download **`Chipmunk-Setup.exe`** (about 0.5 MB) from [chipmunk.bsid.dev](https://chipmunk.bsid.dev). Direct link: [Chipmunk-Setup.exe](https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-Setup.exe). The short link [chipmunk.bsid.dev/download](https://chipmunk.bsid.dev/download) works too.
+2. Open it. Windows may show "Windows protected your PC", because the app isn't code-signed yet. Click **More info**, then **Run anyway**.
+3. Chip appears in the corner and the welcome shows the shortcuts. That's it.
 
-Needs Windows 10 or 11 with the Microsoft Edge WebView2 Runtime, which is built into Windows 11.
+The installer works for the current Windows user and needs no admin prompt. It puts Chipmunk in `%LOCALAPPDATA%\Programs\Chipmunk`, adds a Start menu shortcut and a desktop shortcut, and registers in Settings > Apps. Run it again to update in place.
+
+Prefer not to install? Download the portable **`Chipmunk-win-x64.zip`** from the [latest release](https://github.com/itsbsiddharth/chipmunk/releases/latest), unzip it anywhere and run `Chipmunk.exe`.
+
+Needs Windows 10 or 11 with the Microsoft Edge WebView2 Runtime, which is built into Windows 11. If a PC lacks it, the installer says so and offers a button to get it.
+
+### Updates
+
+Chipmunk checks GitHub for a new release about once a day, when installed with the setup. When there's one, an **Update to X** pill appears in the panel, Chip offers it and the tray menu shows it. One click downloads the new setup and updates in a few seconds. To turn this off, clear **Keep Chipmunk up to date** in Settings.
+
+### Uninstall
+
+Open Settings > Apps > Installed apps > Chipmunk > Uninstall. Your drafts in `Documents\Chipmunk` are kept.
 
 ## Shortcuts
 
@@ -152,12 +164,13 @@ You don't need it. Copying from a browser already keeps the page link with the q
 To install it (Chrome, Edge, Brave):
 
 1. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
-2. Click **Load unpacked** and pick the `extension` folder next to `Chipmunk.exe`.
+2. Click **Load unpacked** and pick the `extension` folder. The installer puts it in `%LOCALAPPDATA%\Programs\Chipmunk\extension`. With the zip, it sits next to `Chipmunk.exe`.
 3. Pin Chipmunk to your toolbar. It connects to the app by itself.
 
 ## Privacy
 
-- Everything stays on your PC. Chipmunk makes no network requests and has no account, telemetry or cloud.
+- Everything stays on your PC. Chipmunk has no account, telemetry or cloud.
+- The daily update check is the only network request Chipmunk makes. It asks GitHub for the latest release. You can turn it off in Settings.
 - Drafts are plain folders in `Documents\Chipmunk`: `prompt.md`, your files and a `draft.json`. You own them, and OneDrive or Dropbox can back them up.
 - Past chats reads Claude Code, Codex and Antigravity history from their files on your PC and never changes them. ChatGPT and Claude chats come in only when you import an export. Browser chats are saved only when you click **Save this chat**.
 - Clipboard entries that apps mark as private, such as passwords from a password manager, are never collected.
@@ -181,17 +194,24 @@ To install it (Chrome, Edge, Brave):
 ## Build from source
 
 ```powershell
-.\build.cmd        # needs the C# compiler from the free "Build Tools for Visual Studio"
+.\build.cmd        # builds the app into dist\
+.\package.ps1      # builds dist\ plus release\Chipmunk-Setup.exe and release\Chipmunk-win-x64.zip
 ```
 
-The app ends up in `dist\`. To work on the interface in a normal browser with a stand-in for the Windows side, run `python tools\devserver.py` and open http://localhost:5178.
+Building needs the C# compiler from the free "Build Tools for Visual Studio". To work on the interface in a normal browser with a stand-in for the Windows side, run `python tools\devserver.py` and open http://localhost:5178.
 
 ```
 src\         C# app: window, tray, shortcuts, clipboard, paste engine, storage, Chip, past chats, MCP server, browser bridge
+setup\       the installer (Setup.cs); the app files are embedded in it at package time
 ui\          the panel (HTML, CSS, JavaScript) rendered by WebView2
 extension\   the Chrome / Edge / Brave extension (optional)
-docs\        images for this README
+site\        the website, https://chipmunk.bsid.dev
+docs\        images for this README, source of the social card
 ```
+
+## Website
+
+The site at https://chipmunk.bsid.dev lives in `site\`. It is static HTML, CSS and JS, deployed on Vercel. `site\vercel.json` defines the short links `/download`, `/download/zip`, `/github` and `/releases`. The social preview image is rendered from `docs\og.html`.
 
 ## Roadmap
 
