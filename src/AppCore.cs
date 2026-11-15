@@ -267,7 +267,7 @@ namespace Chipmunk
             items.Add(new PopItem
             {
                 Kind = PopItem.Kinds.Card, Label = title,
-                Sub = hasContent ? string.Join(" · ", parts) : "Empty. Take a screenshot or type to start",
+                Sub = hasContent ? string.Join(" · ", parts) : "Nothing in it yet",
                 Thumbs = images.Take(3).Select(a => (Image)UiKit.Thumb(Store.FilePath(d, a), 96, 74)).Where(x => x != null).ToList(),
                 Run = ShowPanel,
             });
