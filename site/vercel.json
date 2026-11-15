@@ -1,0 +1,17 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/download", "destination": "https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-Setup.exe", "permanent": false },
+    { "source": "/download/zip", "destination": "https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-win-x64.zip", "permanent": false },
+    { "source": "/github", "destination": "https://github.com/itsbsiddharth/chipmunk", "permanent": false },
+    { "source": "/releases", "destination": "https://github.com/itsbsiddharth/chipmunk/releases", "permanent": false }
+  ],
+  "headers": [
+    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }] },
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+    ] }
+  ]
+}

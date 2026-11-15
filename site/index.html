@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chipmunk: give your AI the whole picture</title>
+<meta name="description" content="A free Windows app for prompts with screenshots. Screenshots, files and notes land in one draft while you work, then one click pastes it all into ChatGPT, Claude, Claude Code or Cursor.">
+<meta name="theme-color" content="#f7f6f2">
+<link rel="canonical" href="https://chipmunk.bsid.dev/">
+<link rel="icon" href="/assets/icon-64.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/icon-256.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://chipmunk.bsid.dev/">
+<meta property="og:title" content="Chipmunk: give your AI the whole picture">
+<meta property="og:description" content="Screenshots, files and notes land in one draft. One click pastes it all into ChatGPT, Claude or Claude Code. Free for Windows.">
+<meta property="og:image" content="https://chipmunk.bsid.dev/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Chipmunk: give your AI the whole picture">
+<meta name="twitter:description" content="Screenshots, files and notes land in one draft. One click pastes it all into any AI. Free for Windows.">
+<meta name="twitter:image" content="https://chipmunk.bsid.dev/assets/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="wrap nav-in">
+    <a class="brand" href="/" aria-label="Chipmunk home"><img src="/assets/icon-64.png" alt="" width="28" height="28">Chipmunk</a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+      <a href="/github" class="gh"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    </nav>
+    <a class="btn btn-ink btn-sm" href="/download" data-download>Download</a>
+  </div>
+</header>
+
+<main id="main">
+  <!-- hero -->
+  <section class="hero">
+    <div class="wrap hero-in">
+      <p class="eyebrow"><span class="dot"></span>Free for Windows · Open source</p>
+      <h1>Give your AI<br><em>the whole picture.</em></h1>
+      <p class="lede">Screenshots, files and notes land in one draft while you work. One click pastes all of it into ChatGPT, Claude or Claude Code. No more screenshot, switch, paste, repeat.</p>
+      <div class="cta">
+        <a class="btn btn-ink btn-lg" href="/download" data-download>
+          <svg class="winlogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.3l7.4-1v7.2H3V5.3zm8.3-1.2L21 2.8v8.7h-9.7V4.1zM3 12.5h7.4v7.2L3 18.7v-6.2zm8.3 0H21v8.7l-9.7-1.3v-7.4z"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+      </div>
+      <p class="fine" data-platform-note>Windows 10 and 11 · 0.5 MB · installs in seconds, no admin needed</p>
+    </div>
+
+    <div class="wrap">
+      <div class="demo" id="demo" aria-label="Animated demo: screenshots land in a Chipmunk draft, then one click sends them to an AI chat" role="img">
+        <div class="win chat">
+          <div class="bar"><i></i><i></i><i></i><span>Your AI chat</span></div>
+          <div class="chat-body">
+            <div class="bubble ai">What are we working on?</div>
+            <div class="bubble me" id="demo-sent">
+              <div class="sent-tiles"><span class="mini m1"></span><span class="mini m2"></span><span class="mini m3"><b>CSS</b></span></div>
+              <p>The Sign in button sits on top of the footer on phones. Fix it without changing desktop.</p>
+            </div>
+          </div>
+          <div class="composer"><span>Message</span><i class="send-dot"></i></div>
+        </div>
+
+        <div class="win panel">
+          <div class="p-head"><img src="/assets/icon-64.png" alt="" width="20" height="20"><b>Fix the mobile sign-in bug</b><span class="p-saved">Saved</span></div>
+          <div class="p-editor"><span id="demo-typed"></span><span class="caret"></span></div>
+          <div class="p-label">Collected <span id="demo-count">0</span></div>
+          <div class="p-tiles">
+            <div class="tile t1"><div class="shot phone"><span class="pb"></span><span class="pf"></span></div><small>Screenshot 9:15</small></div>
+            <div class="tile t2"><div class="shot devtools"><span></span><span></span><span></span><span></span></div><small>Screenshot 9:16</small></div>
+            <div class="tile t3"><div class="shot file"><b>CSS</b><span>styles.css</span></div><small>Dropped</small></div>
+          </div>
+          <div class="p-send" id="demo-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span>Send to <b>your AI</b></span><kbd>Ctrl Enter</kbd></div>
+        </div>
+
+        <div class="flash" id="demo-flash"></div>
+        <div class="pointer" id="demo-pointer"></div>
+        <ol class="steps-ind" aria-hidden="true">
+          <li data-step="1">Take screenshots</li>
+          <li data-step="2">Write the prompt</li>
+          <li data-step="3">Send it all</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- works with -->
+  <section class="works">
+    <div class="wrap">
+      <p>Pastes into the AI you already use</p>
+      <ul>
+        <li>ChatGPT</li><li>Claude</li><li>Claude Code</li><li>Codex</li><li>Cursor</li><li>Gemini</li><li>Antigravity</li><li>any app with a text box</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- before / after -->
+  <section class="loop">
+    <div class="wrap loop-in">
+      <div>
+        <h2>The loop it kills</h2>
+        <p class="sub">Asking an AI about something on your screen used to mean a dozen trips between windows, and a long prompt you could lose to one refresh.</p>
+      </div>
+      <div class="compare">
+        <div class="col before">
+          <h3>Without Chipmunk</h3>
+          <ol>
+            <li>Screenshot</li><li>Switch to the chat</li><li>Paste</li><li>Switch back</li><li>Screenshot again</li><li>Switch, paste, switch…</li><li>Type the prompt in a tiny box</li><li>Hope the tab doesn't reload</li>
+          </ol>
+        </div>
+        <div class="col after">
+          <h3>With Chipmunk</h3>
+          <ol>
+            <li>Screenshot as usual. Each one lands in your draft.</li>
+            <li>Write the prompt in a calm editor that saves as you type.</li>
+            <li>Click <b>Send</b>. Everything pastes in, in one go.</li>
+          </ol>
+          <p class="note">About 15 seconds instead of two minutes, and you never leave what you're doing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- how it works -->
+  <section class="how" id="how">
+    <div class="wrap">
+      <p class="kicker">How it works</p>
+      <h2>Three steps. No setup.</h2>
+      <div class="cards3">
+        <article class="card">
+          <span class="num">1</span>
+          <h3>Open it</h3>
+          <p>Press <kbd>Win</kbd><kbd>Alt</kbd><kbd>P</kbd> from anywhere, or click Chip, the chipmunk in the corner of your screen.</p>
+          <div class="card-art keys-art"><kbd>Win</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>P</kbd></div>
+        </article>
+        <article class="card">
+          <span class="num">2</span>
+          <h3>Throw things in</h3>
+          <p>Screenshots you take land in the draft by themselves. Paste or drop files and text. Type or dictate your prompt.</p>
+          <div class="card-art tiles-art"><span class="mini m1"></span><span class="mini m2"></span><span class="mini m3"><b>PDF</b></span></div>
+        </article>
+        <article class="card">
+          <span class="num">3</span>
+          <h3>Send</h3>
+          <p>Pick ChatGPT, Claude, Claude Code or any open app. Chipmunk switches there and pastes it all, then gives you a fresh draft.</p>
+          <div class="card-art send-art"><span class="app"><i class="av c1">C</i>Claude</span><span class="app"><i class="av c2">G</i>ChatGPT</span><span class="app"><i class="av c3">&gt;_</i>Claude Code</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- product shots -->
+  <section class="shots">
+    <div class="wrap shots-in">
+      <figure class="shot-main"><img src="/assets/panel-light.webp" alt="The Chipmunk panel with a prompt, screenshots, a CSS file and a Send to ChatGPT button" width="705" height="1230" loading="lazy"></figure>
+      <div class="shot-side">
+        <figure><img src="/assets/send-menu.webp" alt="The send menu listing every open AI app" width="705" height="1230" loading="lazy"><figcaption>Send to any open AI app</figcaption></figure>
+        <figure><img src="/assets/past-chats.webp" alt="Past chats: picking prompts and images from an earlier chat" width="705" height="1230" loading="lazy"><figcaption>Reuse pieces of past chats</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- features -->
+  <section class="features" id="features">
+    <div class="wrap">
+      <p class="kicker">Features</p>
+      <h2>Small app. Big difference.</h2>
+      <div class="grid">
+        <article><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span><h3>Screenshots land by themselves</h3><p>Use Win+Shift+S like always. While Chipmunk is open, every screenshot goes into your draft. No saving files, no desktop full of PNGs.</p></article>
+        <article><span class="ic"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></span><h3>One click to any AI</h3><p>Send lists every open AI app and window. It switches there and pastes images, files and text together, then puts your clipboard back.</p></article>
+        <article><span class="ic"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></span><h3>Never lose a prompt</h3><p>Your draft saves on every keystroke, keeps a version every minute, and lives on your disk, not in a chat box that can reload.</p></article>
+        <article><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span><h3>Reuse past chats</h3><p>Pull a prompt and its screenshots out of an earlier Claude Code, Codex, Antigravity, ChatGPT or Claude chat into a new one.</p></article>
+        <article><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3"/></svg></span><h3>Works with your dictation</h3><p>Wispr Flow, Superwhisper, Aqua or Windows voice typing type straight into the draft. Talk through your prompt.</p></article>
+        <article><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"/></svg></span><h3>Built for coding agents</h3><p>In a terminal, files go to Claude Code as @paths. Or connect over MCP and say "use my Chipmunk draft".</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- chip -->
+  <section class="chip">
+    <div class="wrap chip-in">
+      <div class="chip-copy">
+        <p class="kicker">Meet Chip</p>
+        <h2>A tiny helper that saves you trips.</h2>
+        <p class="sub">Chip sits at the edge of your screen. Click it to send your draft anywhere. Switch to an AI app with a draft ready and Chip offers to paste it. Drop files on it to collect them. Don't want it? One switch turns it off.</p>
+      </div>
+      <div class="chip-stage">
+        <div class="cmenu" aria-hidden="true">
+          <div class="cm-card"><span class="cm-thumbs"><i></i><i></i></span><span><b>Fix the mobile sign-in bug</b><small>2 images · 1 file · 49 words</small></span></div>
+          <div class="cm-label">Send to</div>
+          <div class="cm-row hot"><i class="av c1">C</i><span><b>Claude</b><small>Desktop app</small></span><kbd>↵</kbd></div>
+          <div class="cm-row"><i class="av c2">G</i><span><b>ChatGPT</b><small>chatgpt.com · Chrome</small></span></div>
+          <div class="cm-row"><i class="av c3">&gt;_</i><span><b>Claude Code</b><small>Terminal · my-app</small></span></div>
+          <div class="cm-sep"></div>
+          <div class="cm-row plain"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg><span>Snip into draft</span><kbd>Win Alt S</kbd></div>
+          <div class="cm-row plain"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg><span>Past chats</span></div>
+        </div>
+        <div class="chip-say">5 items ready for ChatGPT.<small>Click me to paste it in</small></div>
+        <img class="chip-img" src="/assets/chip.png" alt="Chip, the Chipmunk mascot, holding an acorn" width="220" height="220" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- shortcuts -->
+  <section class="keys" id="shortcuts">
+    <div class="wrap">
+      <p class="kicker">Shortcuts</p>
+      <h2>A few shortcuts. None required.</h2>
+      <div class="key-table">
+        <div><span class="kc"><kbd>Win</kbd><kbd>Alt</kbd><kbd>P</kbd></span><span>Open or hide Chipmunk</span></div>
+        <div><span class="kc"><kbd>Win</kbd><kbd>Shift</kbd><kbd>S</kbd></span><span>Screenshot as usual. Lands in your draft while Chipmunk is open</span></div>
+        <div><span class="kc"><kbd>Win</kbd><kbd>Alt</kbd><kbd>C</kbd></span><span>Grab the text you highlighted, in any app</span></div>
+        <div><span class="kc"><kbd>Win</kbd><kbd>Alt</kbd><kbd>V</kbd></span><span>Paste the whole draft into the app you're in</span></div>
+        <div><span class="kc"><kbd>Ctrl</kbd><kbd>Enter</kbd></span><span>Send from the panel</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- install -->
+  <section class="install" id="install">
+    <div class="wrap install-in">
+      <div>
+        <p class="kicker">Install</p>
+        <h2>Running in under a minute.</h2>
+        <ol class="install-steps">
+          <li><span><b>Download</b> <a href="/download" data-download>Chipmunk-Setup.exe</a>.</span></li>
+          <li><span><b>Open it.</b> Chipmunk installs itself and opens. No admin rights, nothing to click through.</span></li>
+          <li><span><b>Press Win+Alt+P</b> or click Chip, take a screenshot, and hit Send.</span></li>
+        </ol>
+        <div class="smartscreen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+          <p><b>Seeing "Windows protected your PC"?</b> That's Windows being careful with new apps that aren't code-signed yet. Click <b>More info</b>, then <b>Run anyway</b>. The code is <a href="/github">open on GitHub</a>.</p>
+        </div>
+        <p class="fine">Prefer no installer? Get the <a href="https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-win-x64.zip">portable zip</a>. Uninstall any time from Settings &gt; Apps.</p>
+      </div>
+      <div class="install-art" aria-hidden="true">
+        <div class="setup-card">
+          <img src="/assets/chip.png" alt="" width="96" height="96">
+          <b>Chipmunk is ready</b>
+          <span>Look for Chip in the corner of your screen.</span>
+          <i class="bar"><i></i></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- faq -->
+  <section class="faq" id="faq">
+    <div class="wrap faq-in">
+      <h2>Questions</h2>
+      <div class="qa">
+        <details><summary>Is it really free?</summary><p>Yes. Chipmunk is free and open source under the MIT license. No account, no subscription.</p></details>
+        <details><summary>Does it upload my screenshots anywhere?</summary><p>No. Everything stays on your PC in Documents\Chipmunk. Your screenshots only go to the AI app you paste them into, the same as if you pasted them yourself. The only thing Chipmunk sends over the internet is a daily check for updates, which you can turn off.</p></details>
+        <details><summary>Which AI apps does it work with?</summary><p>Anything with a text box: ChatGPT, Claude and Gemini in the browser or their desktop apps, Claude Code, Codex and Antigravity in a terminal, Cursor, Copilot, even Slack. Chipmunk recognises the common AI apps and lists them first.</p></details>
+        <details><summary>Does it work with Wispr Flow?</summary><p>Yes. Click in the prompt and use Wispr Flow, Superwhisper, Aqua or Windows voice typing (Win+H) as you normally would. Your words land in the draft.</p></details>
+        <details><summary>Can I reuse chats from the ChatGPT app?</summary><p>Yes. Export your data from ChatGPT (Settings &gt; Data controls &gt; Export) and import the .zip in Chipmunk's Past chats. Claude Code, Codex and Antigravity chats are read straight from your PC.</p></details>
+        <details><summary>Mac?</summary><p>Not yet. Chipmunk is Windows-first because that's where tools like this were missing. Star the <a href="/github">GitHub repo</a> to hear when that changes.</p></details>
+        <details><summary>How do I uninstall it?</summary><p>Settings &gt; Apps &gt; Installed apps &gt; Chipmunk &gt; Uninstall. Your drafts stay in Documents\Chipmunk.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- final cta -->
+  <section class="final">
+    <div class="wrap final-in">
+      <img src="/assets/chip.png" alt="" width="120" height="120" loading="lazy">
+      <h2>Stop pasting screenshots one by one.</h2>
+      <a class="btn btn-light btn-lg" href="/download" data-download>
+        <svg class="winlogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.3l7.4-1v7.2H3V5.3zm8.3-1.2L21 2.8v8.7h-9.7V4.1zM3 12.5h7.4v7.2L3 18.7v-6.2zm8.3 0H21v8.7l-9.7-1.3v-7.4z"/></svg>
+        Download for Windows
+      </a>
+      <p class="fine">Free · Open source · Windows 10 and 11</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <span class="brand small"><img src="/assets/icon-64.png" alt="" width="20" height="20">Chipmunk</span>
+    <span>Made by <a href="https://bsid.dev">Siddharth</a></span>
+    <span><a href="/github">GitHub</a> · <a href="https://github.com/itsbsiddharth/chipmunk/releases">Releases</a> · MIT license</span>
+  </div>
+</footer>
+
+<div class="mac-note" id="mac-note" hidden>
+  <p><b>Chipmunk is for Windows.</b> Send this link to your PC to install it there.</p>
+  <button type="button" data-copy-link>Copy link</button>
+</div>
+
+<script src="/main.js" defer></script>
+</body>
+</html>
