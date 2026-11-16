@@ -15,15 +15,22 @@ jobs:
         run: swift test
       - name: Build Chipmunk.app
         run: bash mac/scripts/build-app.sh
-      - name: Smoke test (the app starts and stays up)
+      - name: Smoke test (the app starts, the panel loads, take a screenshot)
         run: |
-          ./mac/build/Chipmunk.app/Contents/MacOS/Chipmunk --profile "$RUNNER_TEMP/chipmunk-profile" --background &
+          ./mac/build/Chipmunk.app/Contents/MacOS/Chipmunk --profile "$RUNNER_TEMP/chipmunk-profile" &
           PID=$!
-          sleep 8
+          sleep 12
           kill -0 $PID
-          test -f "$RUNNER_TEMP/chipmunk-profile/settings.json"
+          screencapture -x "$RUNNER_TEMP/mac-panel.png" || true
           kill $PID
           cat "$RUNNER_TEMP/chipmunk-profile/chipmunk.log"
+          grep -q "Panel loaded the UI" "$RUNNER_TEMP/chipmunk-profile/chipmunk.log"
+          mkdir -p mac/build/shots && cp "$RUNNER_TEMP/mac-panel.png" mac/build/shots/ || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chipmunk-mac-screenshot
+          path: mac/build/shots
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
           name: Chipmunk-mac

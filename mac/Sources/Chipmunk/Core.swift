@@ -477,6 +477,7 @@ final class Core: NSObject {
         func need() throws -> Draft { guard let d = d else { throw ChipError("That draft no longer exists.") }; return d }
         switch cmd {
         case "init":
+            Log.info("Panel loaded the UI")
             return ["settings": settingsDto(), "drafts": draftList(), "current": draftDto(current), "target": targetDto(defaultTarget()), "collect": collect]
         case "listDrafts": return draftList()
         case "getDraft": return draftDto(try need())
