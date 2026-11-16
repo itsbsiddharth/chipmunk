@@ -7,19 +7,19 @@
 <meta name="description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, then paste them all into ChatGPT, Claude, Claude Code, Codex or Cursor at once, numbered, with a note on each.">
 <meta name="theme-color" content="#f7f6f2">
 <link rel="canonical" href="https://chipmunk.bsid.dev/">
-<link rel="icon" href="/assets/icon-64.png" type="image/png">
-<link rel="apple-touch-icon" href="/assets/icon-256.png">
+<link rel="icon" href="/assets/icon-64.png?v=cb21e7ff" type="image/png">
+<link rel="apple-touch-icon" href="/assets/icon-256.png?v=1ac532ad">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://chipmunk.bsid.dev/">
 <meta property="og:title" content="Chipmunk: give your AI the whole picture">
 <meta property="og:description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, then paste them all into ChatGPT, Claude, Claude Code, Codex or Cursor at once, numbered, with a note on each.">
-<meta property="og:image" content="https://chipmunk.bsid.dev/assets/og.png">
+<meta property="og:image" content="https://chipmunk.bsid.dev/assets/og.png?v=15ef139a">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1260">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Chipmunk: give your AI the whole picture">
 <meta name="twitter:description" content="Collect screenshots, files and notes as you work. Paste them all into your AI at once. Free for Windows and Mac.">
-<meta name="twitter:image" content="https://chipmunk.bsid.dev/assets/og.png">
+<meta name="twitter:image" content="https://chipmunk.bsid.dev/assets/og.png?v=15ef139a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap">
@@ -30,7 +30,7 @@
 
 <header class="nav" id="top">
   <div class="wrap nav-in">
-    <a class="brand" href="/" aria-label="Chipmunk home"><img src="/assets/icon-64.png" alt="" width="28" height="28">Chipmunk</a>
+    <a class="brand" href="/" aria-label="Chipmunk home"><img src="/assets/icon-64.png?v=cb21e7ff" alt="" width="28" height="28">Chipmunk</a>
     <nav class="nav-links" aria-label="Main">
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
@@ -154,19 +154,28 @@
           <span class="num">3</span>
           <h3>Send</h3>
           <p>Pick ChatGPT, Claude, Claude Code or any open app. Chipmunk switches there and pastes it all, then gives you a fresh draft.</p>
-          <div class="card-art send-art"><span class="app"><i class="av c1">C</i>Claude</span><span class="app"><i class="av c2">G</i>ChatGPT</span><span class="app"><i class="av c3">&gt;_</i>Claude Code</span></div>
+          <div class="card-art send-art"><span class="app"><i class="av c1">C</i>Claude<kbd>Enter</kbd></span><span class="app"><i class="av c2">G</i>ChatGPT</span><span class="app"><i class="av c3">&gt;_</i>Claude Code</span></div>
         </article>
       </div>
     </div>
   </section>
 
   <!-- product shots -->
-  <section class="shots">
+  <section class="shots" id="tour">
     <div class="wrap shots-in">
-      <figure class="shot-main"><img src="/assets/panel-light.webp" alt="A Chipmunk draft asking to fix a bakery website, with three numbered screenshots, a note on each and a Send to Claude Code button" width="705" height="1230" loading="lazy"></figure>
-      <div class="shot-side">
-        <figure><img src="/assets/send-menu.webp" alt="The send menu listing every open AI app" width="705" height="1230" loading="lazy"><figcaption>Send to any open AI app</figcaption></figure>
-        <figure><img src="/assets/past-chats.webp" alt="Past chats: picking prompts and images from an earlier chat" width="705" height="1230" loading="lazy"><figcaption>Reuse pieces of past chats</figcaption></figure>
+      <div class="tour-copy">
+        <p class="kicker">A closer look</p>
+        <h2>Everything your AI needs, in one draft.</h2>
+        <div class="tour-tabs" role="tablist" aria-label="Chipmunk screens">
+          <button type="button" role="tab" id="tab-draft" aria-controls="shot-draft" aria-selected="true"><b>Your draft</b><span>Screenshots land numbered, each with a note, right under your prompt.</span></button>
+          <button type="button" role="tab" id="tab-send" aria-controls="shot-send" aria-selected="false" tabindex="-1"><b>Send anywhere</b><span>Every open AI app in one list. One click pastes it all in.</span></button>
+          <button type="button" role="tab" id="tab-past" aria-controls="shot-past" aria-selected="false" tabindex="-1"><b>Past chats</b><span>Pull a prompt and its screenshots out of an earlier chat.</span></button>
+        </div>
+      </div>
+      <div class="tour-shot">
+        <img class="on" role="tabpanel" id="shot-draft" aria-labelledby="tab-draft" src="/assets/panel-light.webp?v=5711bc42" alt="A Chipmunk draft asking to fix a bakery website, with three numbered screenshots, a note on each and a Send to Claude Code button" width="705" height="1230" loading="lazy">
+        <img role="tabpanel" id="shot-send" aria-labelledby="tab-send" aria-hidden="true" src="/assets/send-menu.webp?v=691b22e2" alt="The send menu listing Claude Code, ChatGPT, Claude, Cursor and other open windows" width="705" height="1230" loading="lazy">
+        <img role="tabpanel" id="shot-past" aria-labelledby="tab-past" aria-hidden="true" src="/assets/past-chats.webp?v=1218efb0" alt="Past chats: picking a prompt and two screenshots from an earlier ChatGPT chat" width="705" height="1230" loading="lazy">
       </div>
     </div>
   </section>
@@ -207,7 +216,7 @@
           <div class="cm-row plain"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg><span>Past chats</span></div>
         </div>
         <div class="chip-say">3 items ready for Claude Code.<small>Click me to paste it in</small></div>
-        <img class="chip-img" src="/assets/chip.png" alt="Chip, the Chipmunk mascot, holding an acorn" width="220" height="220" loading="lazy">
+        <img class="chip-img" src="/assets/chip.png?v=1477eaaa" alt="Chip, the Chipmunk mascot, holding an acorn" width="220" height="220" loading="lazy">
       </div>
     </div>
   </section>
@@ -246,7 +255,7 @@
       </div>
       <div class="install-art" aria-hidden="true">
         <div class="setup-card">
-          <img src="/assets/chip.png" alt="" width="96" height="96">
+          <img src="/assets/chip.png?v=1477eaaa" alt="" width="96" height="96">
           <b>Chipmunk is ready</b>
           <span>Look for Chip in the corner of your screen.</span>
           <i class="bar"><i></i></i>
@@ -278,7 +287,7 @@
   <!-- final cta -->
   <section class="final">
     <div class="wrap final-in">
-      <img src="/assets/chip.png" alt="" width="120" height="120" loading="lazy">
+      <img src="/assets/chip.png?v=1477eaaa" alt="" width="120" height="120" loading="lazy">
       <h2>Stop pasting screenshots one by one.</h2>
       <a class="btn btn-light btn-lg" href="/download" data-download>
         <svg class="winlogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.3l7.4-1v7.2H3V5.3zm8.3-1.2L21 2.8v8.7h-9.7V4.1zM3 12.5h7.4v7.2L3 18.7v-6.2zm8.3 0H21v8.7l-9.7-1.3v-7.4z"/></svg>
@@ -291,14 +300,14 @@
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <span class="brand small"><img src="/assets/icon-64.png" alt="" width="20" height="20">Chipmunk</span>
+    <span class="brand small"><img src="/assets/icon-64.png?v=cb21e7ff" alt="" width="20" height="20">Chipmunk</span>
     <span>Made by <a href="https://bsid.dev">Siddharth</a></span>
     <span><a href="/github">GitHub</a> · <a href="https://github.com/itsbsiddharth/chipmunk/releases">Releases</a> · MIT license</span>
   </div>
 </footer>
 
 <div class="mac-note" id="mac-note" hidden>
-  <p><b>Chipmunk is for Windows.</b> Send this link to your PC to install it there.</p>
+  <p><b>Chipmunk is for Windows and Mac.</b> Send this link to your computer to install it there.</p>
   <button type="button" data-copy-link>Copy link</button>
 </div>
 

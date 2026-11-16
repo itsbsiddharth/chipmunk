@@ -10,6 +10,7 @@ import { spawn } from 'node:child_process';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { stamp } from './stamp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json' };
@@ -176,3 +177,6 @@ browser.kill();
 server.close();
 await sleep(500);
 await rm(profile, { recursive: true, force: true }).catch(() => {});
+
+// New images get new addresses on the website, so no browser keeps showing an old one.
+stamp();

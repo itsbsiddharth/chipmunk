@@ -4,7 +4,7 @@ Chipmunk is a free, open-source app for Windows, with a Mac beta (by Siddharth, 
 
 ## Live things
 
-- Website: https://chipmunk.bsid.dev (Vercel project `chipmunk`, team `bakki`, source in `site/`). Also https://chipmunk-zeta.vercel.app. Short links in `site/vercel.json`: /download, /download/zip, /github, /releases.
+- Website: https://chipmunk.bsid.dev (Vercel project `chipmunk`, team `bakki`, source in `site/`). https://chipmunk-zeta.vercel.app redirects to it (site/vercel.json), so only the real domain ever shows. Short links in `site/vercel.json`: /download, /download/zip, /github, /releases.
 - Short link from the personal site: https://bsid.dev/chipmunk (redirect in the bsid.dev repo's vercel.json).
 - Repo: https://github.com/itsbsiddharth/chipmunk. Releases carry `Chipmunk-Setup.exe` and `Chipmunk-win-x64.zip`. The website links to `releases/latest/download/Chipmunk-Setup.exe`, so the newest release is always what people get.
 - DNS for bsid.dev is at name.com (the user manages it). `chipmunk` is a CNAME to `64d6a008e962d52a.vercel-dns-017.com`.
@@ -27,7 +27,7 @@ Chipmunk is a free, open-source app for Windows, with a Mac beta (by Siddharth, 
 - `ui/` the panel (vanilla HTML/CSS/JS). `ui/mock-host.js` lets the UI run in a normal browser for design work (`python tools\devserver.py`, then http://localhost:5178).
 - `setup/Setup.cs` the installer. The app files get embedded into it at package time.
 - `mac/` the Mac app (Swift, menu bar + WKWebView around the same `ui/`). `mac/scripts/build-app.sh` builds Chipmunk.app; `.github/workflows/mac.yml` tests, builds and smoke-tests it on GitHub's Mac runners (there is no Mac here, so CI is the only compiler). The panel picks key names and hidden features from `settings.platform` / `settings.features`.
-- `extension/` optional Chrome/Edge extension. `site/` the website. `docs/` holds the README images; `hero.html`, `og.html` and `shots/scenes.html` are their sources, and `archive/` keeps earlier marketing sets. `node tools/shots.mjs` re-renders every marketing image (README, site, social card, animated demo) sharp from source; never use real screenshots. `tools/stats.ps1` downloads/stars/traffic report.
+- `extension/` optional Chrome/Edge extension. `site/` the website. `docs/` holds the README images; `hero.html`, `og.html` and `shots/scenes.html` are their sources, and `archive/` keeps earlier marketing sets. `node tools/shots.mjs` re-renders every marketing image (README, site, social card, animated demo) sharp from source; never use real screenshots. Image addresses on the site carry a fingerprint (`?v=…`, added by `tools/stamp.mjs`, which shots.mjs runs) because /assets is cached for a week; run `node tools/stamp.mjs` after changing any file in site/assets by hand. `tools/stats.ps1` downloads/stars/traffic report.
 
 ## Build, test, release
 

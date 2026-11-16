@@ -3,6 +3,7 @@
 ## Unreleased
 
 - The welcome screen's headline is now "Give your AI the whole picture.", matching the website.
+- In dark mode, the Send button is a softer warm gray instead of near-white, so it stays clear without being the brightest thing on screen.
 
 ## 1.4.0 (2026-11-16)
 

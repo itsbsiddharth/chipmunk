@@ -37,8 +37,29 @@
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) { e.target.classList.add('seen'); io.unobserve(e.target); }
     }, { rootMargin: '0px 0px -8% 0px' });
-    $$('.loop-in, .how .card, .shots figure, .grid, .chip-in, .key-table, .install-in, .faq-in').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
+    $$('.loop-in, .how .cards3, .tour-copy, .tour-shot, .grid, .chip-in, .key-table, .install-in, .faq-in').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
   }
+
+  // A closer look: one large screenshot at a time, picked from the tabs (click or arrow keys).
+  const tabs = $$('.tour-tabs [role=tab]');
+  const pick = (tab, focus) => {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      const img = document.getElementById(t.getAttribute('aria-controls'));
+      img.classList.toggle('on', on);
+      img.setAttribute('aria-hidden', String(!on));
+    });
+    if (focus) tab.focus();
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => pick(t));
+    t.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
+      if (d) { e.preventDefault(); pick(tabs[(i + d + tabs.length) % tabs.length], true); }
+    });
+  });
 
   // The hero demo: three screenshots land, the prompt gets typed, Send pastes it all.
   const demo = $('#demo');
