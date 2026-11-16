@@ -192,6 +192,8 @@ namespace Chipmunk
         /// so Chip and its bubbles never end up in what you capture.</summary>
         public static void HideFromCapture(IntPtr h)
         {
+            // CHIPMUNK_SHOW_IN_CAPTURE=1 keeps Chip visible to screenshots, for README images and tests.
+            if (Environment.GetEnvironmentVariable("CHIPMUNK_SHOW_IN_CAPTURE") == "1") return;
             try { SetWindowDisplayAffinity(h, 0x11 /* WDA_EXCLUDEFROMCAPTURE */); } catch { }
         }
 

@@ -1,6 +1,6 @@
 # Chipmunk: guide for working on this project
 
-Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collect screenshots, files and notes into one draft, then one click pastes all of it into ChatGPT, Claude, Claude Code, Codex, Cursor or Antigravity. Read README.md for features and CHANGELOG.md for history (1.0 to 1.3).
+Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collect screenshots, files and notes into one draft, then one click pastes all of it into ChatGPT, Claude, Claude Code, Codex, Cursor or Antigravity. Read README.md for features, CHANGELOG.md for history (1.0 to 1.4) and docs/PRODUCT.md for why things are the way they are (research, decisions, what we chose not to build).
 
 ## Live things
 
@@ -25,6 +25,7 @@ Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collec
 - `src/` C# app (.NET Framework 4.8, WinForms + WebView2). Key files: AppCore.cs (everything the app does), Pet.cs (Chip), Popover.cs (Chip/tray menu + UiKit drawing helpers), Install.cs + InstallInfo.cs (uninstall, updates), History.cs + LocalAgents.cs + ClaudeImport.cs (Past chats), Clipboard.cs (paste engine), Store.cs (drafts on disk), Mcp.cs, Bridge.cs (browser extension bridge).
 - `ui/` the panel (vanilla HTML/CSS/JS). `ui/mock-host.js` lets the UI run in a normal browser for design work (`python tools\devserver.py`, then http://localhost:5178).
 - `setup/Setup.cs` the installer. The app files get embedded into it at package time.
+- `mac/` the Mac app (Swift, menu bar + WKWebView around the same `ui/`). `mac/scripts/build-app.sh` builds Chipmunk.app; `.github/workflows/mac.yml` tests, builds and smoke-tests it on GitHub's Mac runners (there is no Mac here, so CI is the only compiler). The panel picks key names and hidden features from `settings.platform` / `settings.features`.
 - `extension/` optional Chrome/Edge extension. `site/` the website. `docs/` README images and `og.html` (source of the social card `site/assets/og.png`). `tools/stats.ps1` downloads/stars/traffic report.
 
 ## Build, test, release
@@ -32,6 +33,8 @@ Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collec
 - `.\build.cmd` (or `.\build.ps1 -Out <folder>`) builds the app. Needs the VS 2022 Build Tools C# compiler.
 - `.\package.ps1` builds `release\Chipmunk-Setup.exe` and `release\Chipmunk-win-x64.zip`. Bump the version in `src/Program.cs` and `extension/manifest.json` first.
 - Building into `dist\` fails if a Chipmunk copy runs from there; build to a scratch folder with `-Out`.
+- Capture rules (1.4): screenshots go in by themselves only while you work on the draft (panel in front or used in the last 3 minutes) or with "Collect every screenshot" on (auto-off after send). Otherwise Chip or the open panel asks. Chip and toasts are excluded from screen capture; set `CHIPMUNK_SHOW_IN_CAPTURE=1` to see them in screenshots.
+- Drive the panel from scripts: start Chipmunk with `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333`, then use Chrome DevTools Protocol on http://127.0.0.1:9333 (evaluate `(await import('./host.js')).Host.call(...)`). `Chipmunk.exe --harness log.jsonl` opens a window that records every paste it receives. Never touch the clipboard in tests while the user's own Chipmunk panel is open (it would collect the test image).
 - Test safely with an isolated profile: `Chipmunk.exe --profile <folder> --background` keeps settings and drafts apart from the user's. Turn Chip off in test profiles (`"showPet":false` in that profile's settings.json) so only one chipmunk shows on screen.
 - Setup flags for testing: `--dir <folder> --no-shortcuts --no-launch`. `--update` is what the in-app updater uses.
 - Release: `gh release create vX.Y.Z release\Chipmunk-Setup.exe release\Chipmunk-win-x64.zip --title "Chipmunk X.Y" --notes-file release\notes.md`. Installed copies see it within a day and offer the update.

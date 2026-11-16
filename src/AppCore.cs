@@ -533,7 +533,7 @@ namespace Chipmunk
                 var cur = Store.Get(d.id);
                 Store.RemoveAttachment(cur, a.id);
                 PushDraft(cur);
-                Notify("Taken out. Your Screenshots folder still has it.");
+                Notify("Taken out of " + Quote(cur.title) + ".");
             };
             if (PanelIsForeground())
                 win.Emit("captured", new Dictionary<string, object> { { "text", line }, { "attId", a.id }, { "draftId", d.id } });
