@@ -1,0 +1,29 @@
+name: Something didn't work
+description: A paste that failed, a screenshot that went missing, anything broken
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. A screenshot helps a lot.
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Which app were you sending to?
+      placeholder: e.g. Claude Code in Windows Terminal, ChatGPT desktop, Cursor
+  - type: dropdown
+    id: os
+    attributes:
+      label: Your computer
+      options: [Windows 11, Windows 10, macOS]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Chipmunk version
+      description: Settings shows it at the bottom of General.
+      placeholder: e.g. 1.4.0

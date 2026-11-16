@@ -1,38 +1,35 @@
 <!doctype html>
+<!-- README hero (docs/img/hero.png). Rendered at 2x by tools/shots.mjs. -->
 <html><head><meta charset="utf-8"><title>Chipmunk hero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; width: 1600px; height: 900px; overflow: hidden; background: #f7f6f2; font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif; color: #1d1b18; position: relative; }
-  .glow { position: absolute; right: -120px; top: -160px; width: 900px; height: 900px; border-radius: 50%; background: radial-gradient(closest-side, #f3dcc6 0%, rgba(243,220,198,0) 70%); }
-  .copy { position: absolute; left: 110px; top: 150px; width: 700px; }
-  .brand { display: flex; align-items: center; gap: 14px; font-family: "Sitka Subheading", Georgia, serif; font-weight: 600; font-size: 30px; }
+  body { margin: 0; width: 1600px; height: 900px; overflow: hidden; background: #f7f6f2; font-family: Inter, "Segoe UI", sans-serif; color: #1d1b18; position: relative; }
+  .glow { position: absolute; right: -160px; top: -220px; width: 1100px; height: 1100px; border-radius: 50%; background: radial-gradient(closest-side, rgba(233, 178, 129, .36), transparent 70%); }
+  .copy { position: absolute; left: 110px; top: 150px; width: 720px; }
+  .brand { display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: 30px; letter-spacing: -.01em; }
   .brand img { width: 52px; height: 52px; border-radius: 13px; }
-  h1 { font-family: "Sitka Subheading", Georgia, serif; font-weight: 600; font-size: 78px; line-height: 1.04; letter-spacing: -.02em; margin: 46px 0 26px; }
-  p { font-size: 25px; line-height: 1.55; color: #5d5951; margin: 0 0 40px; }
-  .keys { display: flex; gap: 14px; flex-wrap: wrap; }
-  .key { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e6e2d9; border-radius: 14px; padding: 10px 16px 10px 12px; font-size: 18px; color: #5d5951; }
-  kbd { font: 600 15px "Segoe UI", sans-serif; background: #f1efe9; border: 1px solid #d5d0c4; border-bottom-width: 3px; border-radius: 7px; padding: 4px 8px; color: #1d1b18; }
-  .shot { position: absolute; right: 120px; top: 70px; width: 452px; border-radius: 22px; overflow: hidden; box-shadow: 0 40px 90px rgba(60, 40, 20, .22), 0 4px 14px rgba(60, 40, 20, .08); border: 1px solid #e6e2d9; background: #fff; }
-  .shot .bar { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 14px; background: #f1efe9; border-bottom: 1px solid #e6e2d9; }
-  .shot .bar i { width: 11px; height: 11px; border-radius: 50%; background: #d5d0c4; }
-  .shot img { display: block; width: 100%; height: 760px; object-fit: cover; object-position: top; }
-  .chip { position: absolute; right: 548px; bottom: 34px; width: 220px; filter: drop-shadow(0 18px 24px rgba(60, 40, 20, .2)); }
-  .bubble { position: absolute; right: 680px; bottom: 200px; background: #1d1b18; color: #fff; font-size: 18px; font-weight: 600; padding: 12px 18px 13px; border-radius: 16px 16px 4px 16px; line-height: 1.35; }
-  .bubble small { display: block; font-size: 15px; font-weight: 500; color: #f0af7d; }
+  h1 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 112px; line-height: .95; letter-spacing: -.02em; margin: 44px 0 30px; }
+  h1 em { color: #b5602a; }
+  p { font-size: 27px; line-height: 1.5; color: #57534b; margin: 0 0 40px; max-width: 640px; }
+  .keys { display: flex; gap: 12px; flex-wrap: wrap; }
+  .key { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e6e2d9; border-radius: 14px; padding: 10px 16px 10px 12px; font-size: 18px; color: #57534b; }
+  kbd { font: 600 15px Inter, "Segoe UI", sans-serif; background: #f1efe9; border: 1px solid #d5d0c4; border-bottom-width: 3px; border-radius: 7px; padding: 4px 8px; color: #1d1b18; }
+  .shot { position: absolute; right: 130px; top: 40px; width: 470px; height: 820px; border-radius: 22px; overflow: hidden; box-shadow: 0 40px 90px rgba(60, 40, 20, .24), 0 4px 14px rgba(60, 40, 20, .08); border: 1px solid #e6e2d9; background: #fff; }
+  .shot img { display: block; width: 100%; }
+  .chip { position: absolute; right: 585px; bottom: 26px; width: 190px; filter: drop-shadow(0 18px 24px rgba(60, 40, 20, .22)); }
 </style></head>
 <body>
   <div class="glow"></div>
   <div class="copy">
     <div class="brand"><img src="img/icon.png" alt="">Chipmunk</div>
-    <h1>Give your AI the whole picture.</h1>
-    <p>Snip, grab and reuse past chats from any app or website. Chipmunk packs it all into one draft and hands it to ChatGPT, Claude, Codex or Antigravity in one click.</p>
+    <h1>Show your AI<br><em>everything.</em></h1>
+    <p>Screenshots, files and notes, into ChatGPT, Claude, Claude Code, Codex or Cursor in one paste. Numbered, in order, with your notes attached.</p>
     <div class="keys">
-      <div class="key"><kbd>Win+Alt+C</kbd> Grab</div>
-      <div class="key"><kbd>Win+Alt+S</kbd> Snip</div>
-      <div class="key"><kbd>Win+Alt+V</kbd> Send</div>
+      <div class="key"><kbd>Win+Shift+S</kbd> Screenshot as usual</div>
+      <div class="key"><kbd>Ctrl+Enter</kbd> Send it all</div>
     </div>
   </div>
-  <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/panel-light.png" alt=""></div>
-  <div class="bubble">5 items ready for ChatGPT.<small>Click me to paste it in</small></div>
+  <div class="shot"><img src="img/panel-light.png" alt=""></div>
   <img class="chip" src="img/chip.png" alt="">
 </body></html>

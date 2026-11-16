@@ -3,6 +3,7 @@
   "trailingSlash": false,
   "redirects": [
     { "source": "/download", "destination": "https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-Setup.exe", "permanent": false },
+    { "source": "/download/mac", "destination": "https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-mac.zip", "permanent": false },
     { "source": "/download/zip", "destination": "https://github.com/itsbsiddharth/chipmunk/releases/latest/download/Chipmunk-win-x64.zip", "permanent": false },
     { "source": "/github", "destination": "https://github.com/itsbsiddharth/chipmunk", "permanent": false },
     { "source": "/releases", "destination": "https://github.com/itsbsiddharth/chipmunk/releases", "permanent": false }

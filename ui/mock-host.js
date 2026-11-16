@@ -4,7 +4,12 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const now = () => new Date().toISOString();
 const id = (p) => p + Math.random().toString(36).slice(2, 9);
 
+// tools/shots.mjs puts real-looking demo captures here for the marketing screenshots.
+const DEMO = window.__CHIPMUNK_DEMO || null;
+
 function fakeShot(label, hue) {
+  const demoKey = { Colab: 'colab', GPU: 'gpu', Loss: 'loss' }[label];
+  if (DEMO && demoKey && DEMO[demoKey]) return DEMO[demoKey];
   const c = document.createElement('canvas');
   c.width = 640; c.height = 360;
   const g = c.getContext('2d');
@@ -37,7 +42,7 @@ export class MockHost {
       collectText: false, startWithWindows: false, alwaysOnTop: false, theme: 'system',
       showPet: true, petHints: true, usedExtension: false,
       dictation: new URLSearchParams(location.search).has('wispr') ? { app: 'Wispr Flow', hint: 'hold Ctrl+Win' } : { app: null, hint: 'Win+H' },
-      onboarded: new URLSearchParams(location.search).has('onboarded'), dataDir: 'C:\\Users\\you\\Documents\\Chipmunk', version: '1.3.0', autoUpdate: true, installed: true,
+      onboarded: new URLSearchParams(location.search).has('onboarded'), dataDir: 'C:\\Users\\you\\Documents\\Chipmunk', version: '1.4.0', autoUpdate: true, installed: true,
       update: new URLSearchParams(location.search).has('update') ? { version: '1.4.0', canInstall: true } : null,
     };
     this.collect = false;
@@ -70,6 +75,23 @@ export class MockHost {
     c.pinned = true; c.updated = new Date(Date.now() - 3 * 86400000).toISOString();
 
     this.current = a.id;
+    if (DEMO) {
+      this.settings.onboarded = true;
+      const m = this.make('Fix the mobile sign-in bug', `Since yesterday's CSS refactor, the Sign in button sits on top of the footer on phones. Desktop looks fine.
+
+Please:
+1. Find what in the refactor causes the overlap
+2. Fix it without changing the desktop layout
+3. Tell me how to check it at 375px wide`);
+      m.attachments.push(
+        { id: id('a'), kind: 'image', name: 'Screenshot 9:15 AM', source: 'Screenshot · Chrome', url: DEMO.signin, w: 2400, h: 1500, bytes: 412000, include: true, note: 'The button covers the footer at 375px' },
+        { id: id('a'), kind: 'image', name: 'Screenshot 9:16 AM', source: 'Screenshot · DevTools', url: DEMO.console, w: 2400, h: 1500, bytes: 298000, include: true, note: 'This error shows on every page load' },
+        { id: id('a'), kind: 'file', name: 'SignIn.module.css', ext: 'css', bytes: 2140, source: 'Dropped on Chip', include: true },
+        { id: id('a'), kind: 'text', text: "Uncaught TypeError: Cannot read properties of undefined (reading 'offsetHeight') at stickToFooter (SignIn.tsx:42:31)", source: 'Console · localhost:5173', include: true });
+      m.updated = new Date(Date.now() - 20000).toISOString();
+      this.current = m.id;
+      setTimeout(() => this.emit('target', this.windows[1]), 60);
+    }
     this.versionsStore.set(a.id, [
       { name: 'v3', time: new Date(Date.now() - 6 * 60000).toISOString(), text: 'My Colab notebook stops after ~40 minutes.\n\nWhat I need: why it stops.' },
       { name: 'v2', time: new Date(Date.now() - 20 * 60000).toISOString(), text: 'Colab keeps stopping.' },

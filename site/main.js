@@ -9,13 +9,20 @@
   addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  // Not on Windows? Say so kindly, and make it easy to send the link to a PC.
+  // Mac visitors get the Mac download; phones get a nudge to open the page on a computer.
   const ua = navigator.userAgent;
-  const isWindows = /Windows/i.test(ua);
   const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-  if (!isWindows) {
-    const note = $('[data-platform-note]');
-    if (note) note.textContent = isMobile ? 'Chipmunk is a Windows app. Open this page on your PC to install it.' : 'Chipmunk is for Windows 10 and 11. A Mac version isn\'t out yet.';
+  const isMac = !isMobile && /Macintosh|Mac OS X/i.test(ua);
+  const note = $('[data-platform-note]');
+  if (isMac) {
+    const apple = '<svg class="winlogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.86-.76-1.47.02-2.83.86-3.59 2.17-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.24 2.73 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.41 1.2-2.47-.03-.01-2.3-.88-2.3-3.51zM14.2 6.13c.6-.73 1-1.74.9-2.75-.86.04-1.91.58-2.53 1.3-.55.64-1.04 1.67-.91 2.66.96.07 1.94-.49 2.54-1.21z"/></svg>';
+    $$('[data-download]').forEach((el) => {
+      el.href = '/download/mac';
+      if (el.classList.contains('btn-lg')) el.innerHTML = apple + 'Download for Mac <span class="beta">beta</span>';
+    });
+    if (note) note.textContent = 'macOS 13 or later \u00b7 free \u00b7 the first time, right-click the app and choose Open';
+  } else if (isMobile) {
+    if (note) note.textContent = 'Chipmunk runs on Windows and Mac. Open this page on your computer to install it.';
     const mac = $('#mac-note');
     if (mac) {
       mac.hidden = false;

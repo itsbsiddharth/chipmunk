@@ -303,3 +303,5 @@ section { scroll-margin-top: 70px; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+.btn .beta { font-size: .68em; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .65; margin-left: 2px; }

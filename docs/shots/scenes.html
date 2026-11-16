@@ -1,0 +1,97 @@
+<!doctype html>
+<!-- Demo "screenshots" shown inside the marketing shots of the panel. Each scene is one
+     element with an id; tools/shots.mjs renders them at 2x and hands them to the mock host. -->
+<html><head><meta charset="utf-8"><title>Chipmunk demo scenes</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ddd; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  .scene { width: 1200px; height: 750px; overflow: hidden; position: relative; margin: 0 0 20px; }
+
+  /* 1. A sign-in page on a phone, with the button sitting on top of the footer */
+  #signin { background: #eef1f6; display: flex; align-items: center; justify-content: center; gap: 60px; }
+  #signin .phone { width: 330px; height: 680px; border-radius: 44px; background: #111; padding: 12px; box-shadow: 0 30px 60px rgba(20, 30, 60, .25); }
+  #signin .screen { width: 100%; height: 100%; border-radius: 34px; background: #fff; position: relative; overflow: hidden; }
+  #signin .top { height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 13px; font-weight: 600; color: #111; }
+  #signin .logo { margin: 26px 26px 0; display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 18px; color: #1b2a4a; }
+  #signin .logo i { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, #4f6ef7, #8b5cf6); display: block; }
+  #signin h1 { margin: 40px 26px 6px; font-size: 27px; color: #0f172a; letter-spacing: -.02em; }
+  #signin p { margin: 0 26px 26px; color: #64748b; font-size: 14.5px; }
+  #signin label { display: block; margin: 0 26px 6px; font-size: 12.5px; font-weight: 600; color: #334155; }
+  #signin .field { margin: 0 26px 18px; height: 46px; border: 1.5px solid #cbd5e1; border-radius: 12px; display: flex; align-items: center; padding: 0 14px; color: #0f172a; font-size: 15px; }
+  #signin .field.pw { letter-spacing: 3px; }
+  #signin .footer { position: absolute; left: 0; right: 0; bottom: 0; height: 128px; background: #f1f5f9; border-top: 1px solid #e2e8f0; padding: 18px 26px; font-size: 12.5px; color: #64748b; line-height: 1.9; }
+  #signin .btn { position: absolute; left: 26px; right: 26px; bottom: 96px; height: 50px; border-radius: 12px; background: #4f6ef7; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 15.5px; box-shadow: 0 6px 16px rgba(79, 110, 247, .35); }
+  #signin .ring { position: absolute; left: 50%; bottom: 74px; width: 330px; height: 98px; transform: translateX(-50%); border: 4px solid #ef4444; border-radius: 22px; }
+  #signin .note { width: 300px; font-size: 22px; line-height: 1.45; color: #334155; }
+  #signin .note b { color: #ef4444; }
+
+  /* 2. A browser console with an error */
+  #console { background: #1f2023; color: #d4d4d8; font: 22px/1.6 "Cascadia Mono", Consolas, monospace; }
+  #console .tabs { height: 44px; background: #2a2b2f; display: flex; align-items: flex-end; gap: 2px; padding: 0 12px; border-bottom: 1px solid #3a3b40; font-family: "Segoe UI", sans-serif; font-size: 14px; }
+  #console .tabs span { padding: 10px 16px; color: #a1a1aa; }
+  #console .tabs span.on { color: #fff; border-bottom: 2px solid #60a5fa; }
+  #console .row { padding: 9px 22px; border-bottom: 1px solid #2d2e33; display: flex; gap: 14px; }
+  #console .row .src { margin-left: auto; color: #71717a; white-space: nowrap; }
+  #console .err { background: #3a1d1f; color: #fca5a5; border-color: #5c2a2d; }
+  #console .err b { color: #f87171; }
+  #console .warn { background: #33290f; color: #fcd34d; border-color: #4d3d14; }
+  #console .indent { padding-left: 50px; color: #f0a3a3; }
+  #console .muted { color: #8b8b94; }
+
+  /* 3-5. Scenes for Past chats */
+  #colab, #gpu, #loss { background: #fff; }
+  .chrome { height: 46px; background: #f1f3f4; border-bottom: 1px solid #dadce0; display: flex; align-items: center; gap: 8px; padding: 0 16px; }
+  .chrome i { width: 12px; height: 12px; border-radius: 50%; background: #d9d9d9; display: block; }
+  .chrome .url { margin-left: 18px; flex: 1; height: 30px; border-radius: 15px; background: #fff; border: 1px solid #dadce0; font-size: 14px; color: #5f6368; display: flex; align-items: center; padding: 0 16px; }
+  #colab .cell { margin: 36px 40px 0; border: 1px solid #e0e0e0; border-radius: 8px; font: 30px/1.5 "Cascadia Mono", Consolas, monospace; }
+  #colab .code { padding: 18px 22px; color: #1f2937; background: #f8fafc; }
+  #colab .out { padding: 18px 22px; color: #b91c1c; background: #fff5f5; border-top: 1px solid #fecaca; }
+  .chart { position: absolute; left: 70px; right: 70px; top: 120px; bottom: 80px; border-left: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; }
+  .chart h2 { position: absolute; top: -64px; left: 0; margin: 0; font-size: 24px; color: #0f172a; }
+  .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+</style></head>
+<body>
+  <div class="scene" id="signin">
+    <div class="phone"><div class="screen">
+      <div class="top"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="logo"><i></i>acme</div>
+      <h1>Welcome back</h1>
+      <p>Sign in to continue to your workspace.</p>
+      <label>Email</label><div class="field">sam@acme.dev</div>
+      <label>Password</label><div class="field pw">••••••••••</div>
+      <div class="footer">Terms · Privacy · Help<br>© 2026 Acme Inc.<br>Made in Berlin</div>
+      <div class="btn">Sign in</div>
+    </div></div>
+    <div class="note"><b>375px wide:</b> the Sign in button sits on top of the footer.</div>
+  </div>
+
+  <div class="scene" id="console">
+    <div class="tabs"><span>Elements</span><span class="on">Console</span><span>Sources</span><span>Network</span><span>Performance</span></div>
+    <div class="row muted"><span>[vite] connecting…</span><span class="src">client.ts:120</span></div>
+    <div class="row muted"><span>[vite] connected.</span><span class="src">client.ts:155</span></div>
+    <div class="row muted"><span>Download the React DevTools for a better development experience</span><span class="src">react-dom.js:29</span></div>
+    <div class="row warn"><span>⚠ Layout shift: footer moved by 64px after fonts loaded</span><span class="src">layout.ts:18</span></div>
+    <div class="row err"><span><b>✕ Uncaught TypeError:</b> Cannot read properties of undefined (reading 'offsetHeight')</span><span class="src">SignIn.tsx:42</span></div>
+    <div class="row err indent"><span>at stickToFooter (SignIn.tsx:42:31)</span></div>
+    <div class="row err indent"><span>at ResizeObserver.&lt;anonymous&gt; (useViewport.ts:9:5)</span></div>
+    <div class="row muted"><span>GET /api/session 200 · 38 ms</span><span class="src">fetch.ts:12</span></div>
+  </div>
+
+  <div class="scene" id="colab">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">colab.research.google.com/drive/train_patching.ipynb</span></div>
+    <div class="cell"><div class="code">trainer.train(resume_from_checkpoint=False)</div>
+      <div class="out">RuntimeError: CUDA out of memory. Tried to allocate 2.00 GiB<br>(GPU 0; 15.89 GiB total capacity; 13.42 GiB already allocated)</div></div>
+  </div>
+
+  <div class="scene" id="gpu">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">colab.research.google.com · Resources</span></div>
+    <div class="chart"><h2>GPU RAM · 15.9 GB</h2>
+      <svg viewBox="0 0 1000 500" preserveAspectRatio="none"><path d="M0 480 L80 300 L200 260 L320 230 L440 180 L560 140 L680 90 L800 40 L860 12 L880 500" fill="rgba(244,114,22,.15)" stroke="#f97316" stroke-width="5"/></svg></div>
+  </div>
+
+  <div class="scene" id="loss">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">wandb.ai · token-patching · loss</span></div>
+    <div class="chart"><h2>Training loss after resuming</h2>
+      <svg viewBox="0 0 1000 500" preserveAspectRatio="none"><path d="M0 60 C 120 160, 220 260, 360 300 S 640 380, 1000 410" fill="none" stroke="#2563eb" stroke-width="6"/></svg></div>
+  </div>
+</body></html>
