@@ -1,0 +1,397 @@
+<!doctype html>
+<!-- Chipmunk launch video: 30 s at 1920x1080. render(t) draws any moment exactly, so tools/video.mjs
+     can step through it frame by frame and encode a perfectly smooth MP4. Every cut lands on a
+     120 BPM grid (every 0.5 s), so any 120 BPM track lines up. The demo windows are the live
+     scenes from docs/shots/scenes.html, so the video always matches the website. -->
+<html><head><meta charset="utf-8"><title>Chipmunk launch video</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #f7f6f2; font-family: Inter, "Segoe UI", sans-serif; color: #1d1b18; -webkit-font-smoothing: antialiased; }
+  .layer { position: absolute; inset: 0; display: none; }
+  .glow { position: absolute; width: 1600px; height: 1600px; right: -560px; top: -760px; border-radius: 50%; background: radial-gradient(closest-side, rgba(233, 178, 129, .34), transparent 70%); }
+  .glow.b { left: -700px; right: auto; top: auto; bottom: -900px; background: radial-gradient(closest-side, rgba(233, 178, 129, .18), transparent 70%); }
+  .serif { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; letter-spacing: -.02em; }
+  em { color: #b5602a; }
+  .w { display: inline-block; white-space: pre; will-change: transform, opacity, filter; }
+  .line { position: absolute; left: 0; right: 0; text-align: center; margin: 0; }
+
+  /* 1 hook */
+  .hook { font-size: 132px; line-height: 1.04; top: 450px; }
+
+  /* 2 the loop */
+  .pile { position: absolute; left: 960px; top: 540px; }
+  .card-shot { position: absolute; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 30px 60px -24px rgba(60, 38, 18, .5), 0 0 0 1px rgba(0, 0, 0, .06); }
+  .word { position: absolute; left: 960px; top: 540px; background: #1d1b18; color: #fff; font-size: 104px; line-height: 1; padding: 22px 56px 30px; border-radius: 30px; box-shadow: 0 50px 90px -30px rgba(0, 0, 0, .55); white-space: nowrap; }
+
+  /* 3 meet */
+  #icon { position: absolute; left: 860px; top: 250px; width: 200px; height: 200px; border-radius: 46px; box-shadow: 0 34px 70px -24px rgba(60, 38, 18, .45); }
+  .meet { font-size: 150px; top: 500px; }
+  .chip { position: absolute; width: 300px; }
+
+  /* 4 demo */
+  .win { position: absolute; border-radius: 16px; overflow: hidden; background: #fff; border: 1px solid #e6e2d9; box-shadow: 0 2px 4px rgba(29, 27, 24, .05), 0 50px 110px -34px rgba(60, 38, 18, .42); }
+  .host { position: absolute; left: 0; top: 0; }
+  #browser { left: 96px; top: 262px; width: 962px; height: 602px; }
+  #marquee { position: absolute; left: 96px; top: 262px; width: 962px; height: 602px; pointer-events: none; overflow: visible; }
+  #flash { position: absolute; left: 96px; top: 262px; width: 962px; height: 602px; border-radius: 16px; background: #fff; opacity: 0; }
+  .fly { position: absolute; left: 0; top: 0; border-radius: 16px; overflow: hidden; transform-origin: 0 0; box-shadow: 0 30px 60px -20px rgba(60, 38, 18, .5); display: none; }
+  .panel { position: absolute; left: 1124px; top: 200px; width: 700px; height: 830px; background: #fbfaf8; border: 1px solid #e6e2d9; border-radius: 24px; box-shadow: 0 2px 4px rgba(29, 27, 24, .05), 0 50px 110px -34px rgba(60, 38, 18, .42); padding: 26px 28px 28px; display: flex; flex-direction: column; }
+  .p-head { display: flex; align-items: center; gap: 16px; }
+  .p-head svg { width: 30px; height: 30px; fill: none; stroke: #8f8a81; stroke-width: 2; stroke-linecap: round; }
+  .p-head b { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 42px; letter-spacing: -.01em; }
+  .p-saved { margin-left: auto; font-size: 19px; color: #8f8a81; display: flex; align-items: center; gap: 9px; }
+  .p-saved::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #2f7a4f; }
+  .p-editor { margin-top: 20px; height: 176px; border: 1px solid #e6e2d9; border-radius: 16px; background: #fff; padding: 20px 24px; font-size: 26px; line-height: 1.45; }
+  .p-editor .ph { color: #b3ada3; }
+  .caret { display: inline-block; width: 3px; height: 30px; background: #b5602a; vertical-align: -5px; margin-left: 2px; border-radius: 2px; }
+  .p-label { margin: 28px 0 14px; font-size: 22px; font-weight: 600; color: #57534b; display: flex; align-items: center; gap: 12px; }
+  .p-label span { font-size: 18px; background: #efede7; border: 1px solid #e6e2d9; border-radius: 13px; padding: 0 11px; line-height: 28px; }
+  .p-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .tile { border: 1px solid #e6e2d9; border-radius: 14px; overflow: hidden; background: #fff; opacity: 0; }
+  .thumb { position: relative; height: 128px; overflow: hidden; background: #fff; border-bottom: 1px solid #efede7; }
+  .n { position: absolute; left: 9px; top: 9px; width: 32px; height: 32px; border-radius: 50%; background: #1d1b18; color: #fff; font: 700 17px Inter, sans-serif; display: grid; place-items: center; box-shadow: 0 0 0 3px #fff; z-index: 2; }
+  .note { padding: 12px 14px 14px; font-size: 19px; line-height: 1.35; min-height: 80px; }
+  .p-send { margin-top: auto; height: 88px; border-radius: 18px; background: #1d1b18; color: #fff; display: flex; align-items: center; gap: 20px; padding: 0 30px; transform-origin: center; }
+  .p-send svg { width: 34px; height: 34px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .p-send b { display: block; font-size: 27px; } .p-send small { font-size: 19px; opacity: .62; }
+  .cap { position: absolute; left: 0; right: 0; top: 58px; margin: 0; text-align: center; font-size: 80px; line-height: 1.05; }
+  .cursor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; display: none; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .3)); }
+
+  /* 5 payoff */
+  .term { position: absolute; left: 54px; top: 355px; width: 860px; height: 520px; background: #1c1b19; border-radius: 18px; overflow: hidden; color: #ebe7df; box-shadow: 0 50px 110px -34px rgba(30, 20, 10, .6); }
+  .tbar { height: 54px; display: flex; align-items: center; gap: 10px; padding: 0 20px; background: #252320; color: #8f8a81; font-size: 18px; }
+  .tbar i { width: 13px; height: 13px; border-radius: 50%; background: #3a3733; display: block; }
+  .tbar span { margin-left: 14px; }
+  .tbody { padding: 30px 34px; font: 24px/1.62 "Cascadia Mono", Consolas, monospace; }
+  .ln { white-space: pre-wrap; opacity: 0; }
+  .ln .pr { color: #e09a5f; } .img { color: #e9b07c; } .dim { color: #8f8a81; } .ok { color: #82d6a0; }
+  .wfix { position: absolute; }
+  .fixed-pill { position: absolute; right: 22px; bottom: 22px; background: #2f7a4f; color: #fff; font: 600 22px Inter, sans-serif; padding: 9px 20px 10px; border-radius: 999px; box-shadow: 0 10px 24px -10px rgba(20, 70, 40, .7); opacity: 0; z-index: 3; }
+
+  /* 6 end card */
+  .tag { font-size: 176px; line-height: .98; top: 300px; transform-origin: 50% 0; }
+  .brand { position: absolute; left: 0; right: 0; top: 560px; display: flex; justify-content: center; align-items: center; gap: 24px; font-size: 60px; font-weight: 700; letter-spacing: -.02em; }
+  .brand img { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 20px 40px -18px rgba(60, 38, 18, .45); }
+  .cta { position: absolute; left: 0; right: 0; top: 700px; display: flex; justify-content: center; }
+  .pill { font-size: 34px; font-weight: 600; background: #1d1b18; color: #fff; padding: 20px 40px 22px; border-radius: 999px; }
+  .pill span { color: #c9c3b8; font-weight: 500; }
+</style></head>
+<body>
+  <div class="glow"></div><div class="glow b"></div>
+
+  <section class="layer" id="s1">
+    <h1 class="line hook serif" id="hook1">Your AI can do almost anything.</h1>
+    <h1 class="line hook serif" id="hook2">But it can&rsquo;t <em>see your screen.</em></h1>
+  </section>
+
+  <section class="layer" id="s2"><div class="pile" id="pile"></div><div class="word serif" id="word"></div></section>
+
+  <section class="layer" id="s3">
+    <img id="icon" src="../../site/assets/icon-256.png" alt="">
+    <h1 class="line meet serif" id="meet">Meet Chipmunk.</h1>
+    <img class="chip" id="chip3" src="../../site/assets/chip.png" alt="">
+  </section>
+
+  <section class="layer" id="s4">
+    <div class="win" id="browser"></div>
+    <svg id="marquee" viewBox="0 0 962 602"><rect id="mrect" x="2.5" y="2.5" width="957" height="597" rx="16" fill="none" stroke="#b5602a" stroke-width="5"/></svg>
+    <div id="flash"></div>
+    <div class="panel" id="panel">
+      <div class="p-head"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><b>Fix my bakery&rsquo;s website</b><span class="p-saved">Saved</span></div>
+      <div class="p-editor"><span id="typed"></span><span class="caret" id="caret"></span><span class="ph" id="ph">What should the AI do?</span></div>
+      <div class="p-label">Collected <span id="count">0</span></div>
+      <div class="p-tiles">
+        <div class="tile" id="tile0"><div class="thumb" id="thumb0"><i class="n">1</i></div><div class="note" id="note0"></div></div>
+        <div class="tile" id="tile1"><div class="thumb" id="thumb1"><i class="n">2</i></div><div class="note" id="note1"></div></div>
+        <div class="tile" id="tile2"><div class="thumb" id="thumb2"><i class="n">3</i></div><div class="note" id="note2"></div></div>
+      </div>
+      <div class="p-send" id="send"><svg viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"/></svg><span><b>Send to Claude Code</b><small>Ctrl+Enter</small></span></div>
+    </div>
+    <h2 class="cap serif" id="c0">Screenshot as you go.</h2>
+    <h2 class="cap serif" id="c1">Say what you want.</h2>
+    <h2 class="cap serif" id="c2">Send it all. <em>One paste.</em></h2>
+    <svg class="cursor" id="cursor" viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 7z" fill="#1d1b18" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+  </section>
+
+  <section class="layer" id="s5">
+    <div class="term" id="term">
+      <div class="tbar"><i></i><i></i><i></i><span>Terminal &middot; bakery-site</span></div>
+      <div class="tbody">
+        <div class="ln" id="l0"><span class="pr">&gt;</span> Fix these three things on my bakery&rsquo;s website. Keep everything else the same.</div>
+        <div class="ln" id="l1">  <span class="img">[Image #1]</span> The button covers the headline</div>
+        <div class="ln" id="l2">  <span class="img">[Image #2]</span> Total should be $20, not $0</div>
+        <div class="ln" id="l3">  <span class="img">[Image #3]</span> Make our reviews look like this</div>
+        <div class="ln" id="l4"><br><span class="dim" id="work">Working</span></div>
+        <div class="ln" id="l5"><span class="ok">&#10003; Fixed all three.</span></div>
+      </div>
+    </div>
+    <div class="win wfix" id="fixA"><div class="fixed-pill" id="pillA">&#10003; Fixed</div><div class="fixed-pill" id="pillB">&#10003; Fixed</div></div>
+    <h2 class="cap serif" id="c3">Every screenshot, in order, <em>with your notes.</em></h2>
+    <h2 class="cap serif" id="c4">Fixed in one go.</h2>
+  </section>
+
+  <section class="layer" id="s6">
+    <h1 class="line tag serif" id="tag">Give your AI<br><em>the whole picture.</em></h1>
+    <div class="brand" id="brand"><img src="../../site/assets/icon-256.png" alt="">Chipmunk</div>
+    <div class="cta" id="cta"><div class="pill">Free for Windows &amp; Mac <span>&middot; chipmunk.bsid.dev</span></div></div>
+    <img class="chip" id="chip6" src="../../site/assets/chip.png" alt="">
+  </section>
+
+<script>
+const DURATION = 30;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const out3 = (x) => 1 - Math.pow(1 - x, 3);
+const inout = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x) => { const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const show = (el, on) => { el.style.display = on ? 'block' : 'none'; };
+
+// Split a heading into words that can rise in one by one (keeps <em> and <br>).
+function words(el) {
+  const walk = (node) => [...node.childNodes].forEach((n) => {
+    if (n.nodeType === 3) {
+      const frag = document.createDocumentFragment();
+      n.textContent.split(/(\s+)/).forEach((part) => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.append(part); return; }
+        const s = document.createElement('span'); s.className = 'w'; s.textContent = part; frag.append(s);
+      });
+      n.replaceWith(frag);
+    } else if (n.nodeType === 1) walk(n);
+  });
+  walk(el);
+  return [...el.querySelectorAll('.w')];
+}
+function rise(ws, t, start, stagger = .07, dur = .5) {
+  ws.forEach((w, i) => {
+    const x = out3(prog(t, start + i * stagger, start + i * stagger + dur));
+    w.style.opacity = x;
+    w.style.transform = `translateY(${(1 - x) * 46}px)`;
+    w.style.filter = x < 1 ? `blur(${(1 - x) * 10}px)` : 'none';
+  });
+}
+
+// The demo windows are the real scenes from docs/shots/scenes.html, drawn live at any size.
+let SCENE_CSS = '', SCENES = null;
+function scene(id, scale) {
+  const host = document.createElement('div');
+  host.className = 'host';
+  host.style.width = 1200 * scale + 'px'; host.style.height = 750 * scale + 'px';
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `<style>${SCENE_CSS} :host { font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #1f1a16; } .scene { margin: 0; }</style>
+    <div style="width:1200px;height:750px;transform:scale(${scale});transform-origin:0 0">${SCENES.getElementById(id).outerHTML}</div>`;
+  host.root = root;
+  return host;
+}
+
+const SB = 962 / 1200;                       // browser window scale in the demo
+const SHOTS = ['home', 'order', 'reviews'];
+const NOTES = ['The button covers the headline', 'Total should be $20, not $0', 'Make our reviews look like this'];
+const B = [10.0, 12.5, 14.75];               // when each screenshot is taken
+const PROMPT = 'Fix these three things on my bakery’s website. Keep everything else the same.';
+const LOOP = ['Screenshot.', 'Switch apps.', 'Paste.', 'Explain it.', 'Switch back.', 'Screenshot.', 'Switch.', 'Paste…'];
+const PILE = [
+  { s: 'home', x: -560, y: -250, r: -8, fx: -1500, fy: -420 }, { s: 'order', x: 520, y: -235, r: 7, fx: 1500, fy: -300 },
+  { s: 'reviews', x: -500, y: 245, r: 5, fx: -1400, fy: 600 }, { s: 'home', x: 560, y: 250, r: -6, fx: 1500, fy: 640 },
+  { s: 'order', x: -70, y: -330, r: 3, fx: 0, fy: -1000 }, { s: 'reviews', x: 80, y: 335, r: -4, fx: 0, fy: 1000 },
+  { s: 'order', x: -700, y: 15, r: -11, fx: -1600, fy: 0 }, { s: 'home', x: 705, y: -10, r: 10, fx: 1600, fy: 0 },
+];
+
+const el = {};
+const ready = (async () => {
+  const html = await (await fetch('../shots/scenes.html')).text();
+  SCENES = new DOMParser().parseFromString(html, 'text/html');
+  SCENE_CSS = SCENES.querySelector('style').textContent;
+
+  el.hook1 = words($('hook1')); el.hook2 = words($('hook2'));
+  el.meet = words($('meet')); el.tag = words($('tag'));
+
+  el.pile = PILE.map((p) => { const c = document.createElement('div'); c.className = 'card-shot'; c.style.width = '360px'; c.style.height = '225px'; c.append(scene(p.s, .3)); $('pile').append(c); return c; });
+
+  el.browser = SHOTS.map((s) => { const h = scene(s, SB); $('browser').append(h); return h; });
+  el.thumbs = SHOTS.map((s, i) => { const h = scene(s, 205 / 1200); $('thumb' + i).prepend(h); return h; });
+  el.fly = SHOTS.map((s) => { const f = document.createElement('div'); f.className = 'fly'; f.style.width = '962px'; f.style.height = '602px'; f.append(scene(s, SB)); $('s4').append(f); return f; });
+
+  const fa = scene('home', .76), fb = scene('order', .76);
+  $('fixA').prepend(fa, fb); el.fa = fa; el.fb = fb;
+  Object.assign($('fixA').style, { left: '954px', top: '330px', width: 1200 * .76 + 'px', height: 750 * .76 + 'px' });
+  el.cta = fa.root.querySelector('.cta'); el.ctaP = fa.root.querySelector('.hero p');
+  el.total = fb.root.querySelector('.total b');
+
+  await document.fonts.ready;
+  // Where the fixed button belongs: under the line below the headline.
+  show($('s5'), true);
+  el.ctaFixTop = el.ctaP.offsetTop + el.ctaP.offsetHeight + 30;
+  show($('s5'), false);
+  // Where each thumbnail sits, for the screenshots that fly into the panel.
+  show($('s4'), true);
+  el.thumbRects = [0, 1, 2].map((i) => $('thumb' + i).getBoundingClientRect());
+  show($('s4'), false);
+  render(0);
+  return true;
+})();
+window.ready = ready;
+
+function caption(ids, times, t) {
+  ids.forEach((id, i) => {
+    const a = times[i], b = times[i + 1];
+    const x = out3(prog(t, a, a + .35)), o = prog(t, b - .2, b);
+    const c = $(id);
+    c.style.opacity = x * (1 - o);
+    c.style.transform = `translateY(${(1 - x) * 30 - o * 20}px)`;
+    c.style.filter = x < 1 ? `blur(${(1 - x) * 8}px)` : 'none';
+  });
+}
+
+function render(t) {
+  // 1. Hook: 0 - 3 s
+  const s1 = t < 3; show($('s1'), s1);
+  if (s1) {
+    rise(el.hook1, t, .15);
+    $('hook1').style.opacity = 1 - prog(t, 1.3, 1.55);
+    $('hook1').style.transform = `translateY(${-prog(t, 1.3, 1.55) * 30}px)`;
+    rise(el.hook2, t, 1.6, .08);
+    const o = prog(t, 2.72, 2.98);
+    $('hook2').style.opacity = 1 - o;
+    $('hook2').style.transform = `scale(${1 + o * .06})`;
+  }
+
+  // 2. The loop: 3 - 7.5 s, one word per beat while screenshots pile up
+  const s2 = t >= 3 && t < 7.5; show($('s2'), s2);
+  if (s2) {
+    const k = Math.min(LOOP.length - 1, Math.floor((t - 3) / .5));
+    const word = $('word');
+    word.textContent = LOOP[k];
+    const pop = out3(prog(t, 3 + k * .5, 3 + k * .5 + .16));
+    const leave = prog(t, 7.1, 7.45);
+    word.style.opacity = (k === 0 ? out3(prog(t, 3, 3.12)) : 1) * (1 - leave);
+    word.style.transform = `translate(-50%, -50%) scale(${(1.12 - .12 * pop) * (1 - leave * .1)}) rotate(${k % 2 ? 1.5 : -1.5}deg)`;
+    el.pile.forEach((c, i) => {
+      const p = PILE[i];
+      const a = back(prog(t, 3 + i * .5, 3 + i * .5 + .38));
+      const shown = t >= 3 + i * .5;
+      c.style.display = shown ? 'block' : 'none';
+      c.style.opacity = 1 - leave;
+      const x = lerp(p.fx, p.x, a) * (1 + leave * .25), y = lerp(p.fy, p.y, a) * (1 + leave * .25);
+      c.style.transform = `translate(${x - 180}px, ${y - 112}px) rotate(${p.r * (1 + (1 - a) * 1.5)}deg)`;
+    });
+  }
+
+  // 3. Meet Chipmunk: 7.5 - 9.5 s
+  const s3 = t >= 7.5 && t < 9.5; show($('s3'), s3);
+  if (s3) {
+    const i = back(prog(t, 7.5, 7.95));
+    $('icon').style.opacity = prog(t, 7.5, 7.7);
+    $('icon').style.transform = `scale(${.55 + .45 * i})`;
+    rise(el.meet, t, 7.72, .09);
+    const c = out3(prog(t, 8.05, 8.55));
+    Object.assign($('chip3').style, { right: '170px', bottom: '-40px', transform: `translateY(${(1 - c) * 340}px) rotate(${Math.sin((t - 8) * 6) * 3 * c}deg)` });
+    const o = prog(t, 9.25, 9.5);
+    $('s3').style.opacity = 1 - o;
+    $('s3').style.transform = `scale(${1 - o * .04})`;
+  }
+
+  // 4. Demo: 9.5 - 19.5 s
+  const s4 = t >= 9.5 && t < 19.5; show($('s4'), s4);
+  if (s4) {
+    const inn = out3(prog(t, 9.5, 10)), gone = inout(prog(t, 19.12, 19.5));
+    $('browser').style.opacity = inn * (1 - gone);
+    $('browser').style.transform = `translateX(${(1 - inn) * -80 - gone * 120}px)`;
+    $('panel').style.opacity = inn * (1 - gone);
+    $('panel').style.transform = `translateX(${(1 - inn) * 80 + gone * 120}px)`;
+
+    const cur = t < B[1] ? 0 : t < B[2] ? 1 : 2;
+    el.browser.forEach((h, i) => { h.style.opacity = i === cur ? 1 : 0; });
+
+    let count = 0, mOn = 0, flash = 0;
+    B.forEach((b, i) => {
+      const draw = prog(t, b + .12, b + .62);
+      if (t >= b + .12 && t < b + 1.0) mOn = draw;
+      flash = Math.max(flash, t >= b + .66 ? .8 * (1 - prog(t, b + .72, b + 1.05)) * prog(t, b + .66, b + .72) : 0);
+      // the screenshot flies into the panel
+      const f = el.fly[i], fp = inout(prog(t, b + .78, b + 1.42));
+      const flying = t >= b + .78 && t < b + 1.45;
+      f.style.display = flying ? 'block' : 'none';
+      if (flying) {
+        const r = el.thumbRects[i], s = lerp(1, r.width / 962, fp);
+        f.style.transform = `translate(${lerp(96, r.left, fp)}px, ${lerp(262, r.top, fp)}px) scale(${s})`;
+        f.style.borderRadius = lerp(16, 14 / s, fp) + 'px';
+      }
+      const tile = $('tile' + i), tin = out3(prog(t, b + 1.36, b + 1.6));
+      tile.style.opacity = tin;
+      tile.style.transform = `scale(${.94 + .06 * tin})`;
+      if (t >= b + 1.4) count++;
+      const chars = Math.round(NOTES[i].length * prog(t, b + 1.55, b + 2.25));
+      $('note' + i).textContent = NOTES[i].slice(0, chars);
+    });
+    const per = 957 * 2 + 597 * 2;
+    $('mrect').style.strokeDasharray = per;
+    $('mrect').style.strokeDashoffset = per * (1 - mOn);
+    $('marquee').style.opacity = mOn > 0 ? 1 : 0;
+    $('flash').style.opacity = flash;
+    $('count').textContent = count;
+
+    const typed = Math.round(PROMPT.length * prog(t, 16.9, 18.2));
+    $('typed').textContent = PROMPT.slice(0, typed);
+    $('ph').style.display = typed ? 'none' : 'inline';
+    $('caret').style.display = t >= 16.75 && t < 19.1 && (Math.floor(t * 2.5) % 2 === 0 || (t > 16.9 && t < 18.2)) ? 'inline-block' : 'none';
+
+    caption(['c0', 'c1', 'c2'], [9.55, 16.85, 18.3, 19.35], t);
+
+    const cursor = $('cursor');
+    const cv = t >= 18.3 && t < 19.2;
+    cursor.style.display = cv ? 'block' : 'none';
+    const send = { x: 1124 + 28 + 230, y: 200 + 830 - 28 - 44 };
+    const m = inout(prog(t, 18.32, 18.88));
+    cursor.style.transform = `translate(${lerp(1640, send.x, m)}px, ${lerp(820, send.y, m)}px) scale(${t > 18.95 && t < 19.08 ? .88 : 1})`;
+    const press = t > 18.95 && t < 19.1;
+    $('send').style.transform = `scale(${press ? .97 : 1})`;
+    $('send').style.background = press ? '#000' : '#1d1b18';
+  }
+
+  // 5. Payoff: 19.5 - 24 s
+  const s5 = t >= 19.5 && t < 24; show($('s5'), s5);
+  if (s5) {
+    const inn = out3(prog(t, 19.5, 19.95)), gone = prog(t, 23.7, 24);
+    $('term').style.opacity = inn * (1 - gone);
+    $('term').style.transform = `translateY(${(1 - inn) * 40}px)`;
+    [19.85, 20.15, 20.4, 20.65, 20.95, 21.65].forEach((a, i) => { const o = out3(prog(t, a, a + .25)); $('l' + i).style.opacity = o; $('l' + i).style.transform = `translateX(${(1 - o) * -16}px)`; });
+    $('work').textContent = 'Working' + '.'.repeat(1 + Math.floor((t * 4) % 3));
+    $('l4').style.display = t < 21.65 ? 'block' : 'none';
+    const wa = out3(prog(t, 19.7, 20.15));
+    $('fixA').style.opacity = wa * (1 - gone); $('fixA').style.transform = `translateX(${(1 - wa) * 60}px)`;
+    const second = prog(t, 22.55, 22.7);
+    el.fa.style.opacity = 1 - second; el.fb.style.opacity = second;
+    caption(['c3', 'c4'], [19.6, 21.7, 23.7], t);
+    // the button moves off the headline, then the total corrects itself
+    const mv = inout(prog(t, 21.75, 22.3));
+    el.cta.style.left = lerp(70, 0, mv) + 'px';
+    el.cta.style.top = lerp(128, el.ctaFixTop, mv) + 'px';
+    const fixedTotal = t >= 22.95;
+    el.total.textContent = fixedTotal ? '$20.00' : '$0.00';
+    el.total.style.color = fixedTotal ? '#2f7a4f' : '#3b2414';
+    const pa = back(prog(t, 22.2, 22.5)), pb = back(prog(t, 23.0, 23.3));
+    $('pillA').style.opacity = prog(t, 22.2, 22.3) * (1 - second); $('pillA').style.transform = `scale(${.6 + .4 * pa})`;
+    $('pillB').style.opacity = prog(t, 23.0, 23.1); $('pillB').style.transform = `scale(${.6 + .4 * pb})`;
+  }
+
+  // 6. End card: 24 - 30 s
+  const s6 = t >= 24; show($('s6'), s6);
+  if (s6) {
+    rise(el.tag, t, 24.05, .085, .55);
+    const up = inout(prog(t, 25.9, 26.5));
+    $('tag').style.transform = `translateY(${-up * 150}px) scale(${1 - up * .24})`;
+    const b = out3(prog(t, 26.2, 26.7)), c = out3(prog(t, 26.5, 27));
+    $('brand').style.opacity = b; $('brand').style.transform = `translateY(${(1 - b) * 40}px)`;
+    $('cta').style.opacity = c; $('cta').style.transform = `translateY(${(1 - c) * 40}px)`;
+    const ch = out3(prog(t, 26.8, 27.35));
+    Object.assign($('chip6').style, { right: '150px', bottom: '-36px', transform: `translateY(${(1 - ch) * 340}px) rotate(${Math.sin((t - 26.8) * 5) * 3 * ch}deg)` });
+  }
+}
+window.render = render;
+window.DURATION = DURATION;
+</script>
+</body></html>
