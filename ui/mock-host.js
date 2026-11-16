@@ -99,30 +99,31 @@ export class MockHost {
     setTimeout(() => this.emit('target', this.windows[0]), 50);
   }
 
-  // The everyday example used in every marketing image: picking between two laptops seen on two
-  // shopping sites, with a note on each screenshot and a line from a review, sent to ChatGPT.
+  // The example used in every marketing image: you're building your bakery's website, spot two
+  // problems and a café site whose reviews you like, screenshot each with a note, and send all
+  // three to Claude Code at once. Earlier examples are kept in docs/archive/.
   useMarketingDemo() {
     this.settings.onboarded = true;
-    const m = this.make('Help me pick a laptop', `I'm choosing between these two laptops. I edit photos and travel a lot, and my budget is about $1,200.
+    const m = this.make("Fix my bakery's website", `Fix these three things on my bakery's website. Keep everything else the same.
 
-Which one should I buy? Explain the trade-offs in plain words.`);
+The order page matters most: people can't check out right now.`);
     m.attachments.push(
-      { id: id('a'), kind: 'image', name: 'Screenshot 7:42 PM', source: 'Screenshot · Chrome', url: DEMO.laptopA, w: 2400, h: 1500, bytes: 389000, include: true, note: 'In my budget, but heavier' },
-      { id: id('a'), kind: 'image', name: 'Screenshot 7:44 PM', source: 'Screenshot · Chrome', url: DEMO.laptopB, w: 2400, h: 1500, bytes: 402000, include: true, note: 'Lighter and faster, but $250 more' },
-      { id: id('a'), kind: 'text', text: 'Battery life is the weak spot: I got about 7 hours of real work, not the 12 on the box.', source: 'A review of the Aero 14', include: true });
+      { id: id('a'), kind: 'image', name: 'Screenshot 10:12 AM', source: 'Screenshot · Chrome', url: DEMO.home, w: 2400, h: 1500, bytes: 412000, include: true, note: 'The button covers the headline' },
+      { id: id('a'), kind: 'image', name: 'Screenshot 10:14 AM', source: 'Screenshot · Chrome', url: DEMO.order, w: 2400, h: 1500, bytes: 298000, include: true, note: 'Total should be $20, not $0' },
+      { id: id('a'), kind: 'image', name: 'Screenshot 10:21 AM', source: 'Screenshot · Chrome', url: DEMO.reviews, w: 2400, h: 1500, bytes: 356000, include: true, note: 'Make our reviews look like this' });
     m.updated = new Date(Date.now() - 20000).toISOString();
     this.current = m.id;
     this.windows = [
+      { hwnd: '102', label: 'Claude Code', app: 'Terminal', title: 'Claude Code · bakery-site', terminal: true, ai: true },
       { hwnd: '101', label: 'ChatGPT', app: 'ChatGPT', title: 'ChatGPT', terminal: false, ai: true },
-      { hwnd: '104', label: 'Claude', app: 'Chrome', title: 'Weekend in Lisbon - Claude', terminal: false, ai: true },
-      { hwnd: '102', label: 'Claude Code', app: 'Terminal', title: 'Claude Code · my-website', terminal: true, ai: true },
-      { hwnd: '103', label: 'Cursor', app: 'Cursor', title: 'Cursor · portfolio', terminal: false, ai: true },
+      { hwnd: '104', label: 'Claude', app: 'Chrome', title: 'Holiday opening hours - Claude', terminal: false, ai: true },
+      { hwnd: '103', label: 'Cursor', app: 'Cursor', title: 'Cursor · bakery-site', terminal: false, ai: true },
       { hwnd: '105', label: 'Slack', app: 'Slack', title: 'Slack · #general', terminal: false, ai: false },
       { hwnd: '106', label: 'File Explorer', app: 'File Explorer', title: 'Downloads', terminal: false, ai: false },
     ];
     this.saved.chatgpt = [
-      { id: 'g1', title: 'Laptop for photo editing', sub: 'chatgpt.com', updated: new Date(Date.now() - 26 * 3600000).toISOString(), turns: 3, images: 3 },
-      { id: 'g2', title: 'Weekend in Lisbon', sub: 'chatgpt.com', updated: new Date(Date.now() - 4 * 86400000).toISOString(), turns: 6, images: 0 },
+      { id: 'g1', title: 'Bakery website ideas', sub: 'chatgpt.com', updated: new Date(Date.now() - 26 * 3600000).toISOString(), turns: 4, images: 2 },
+      { id: 'g2', title: 'Holiday opening hours post', sub: 'chatgpt.com', updated: new Date(Date.now() - 4 * 86400000).toISOString(), turns: 6, images: 0 },
     ];
   }
 
@@ -303,12 +304,12 @@ Which one should I buy? Explain the trade-offs in plain words.`);
         if (DEMO) {
           const t = (h) => new Date(Date.now() - h * 3600000).toISOString();
           return {
-            source: args.source, sourceName: names[args.source], id: args.sessionId, title: 'Laptop for photo editing',
+            source: args.source, sourceName: names[args.source], id: args.sessionId, title: 'Bakery website ideas',
             turns: [
-              { index: 0, role: 'user', time: t(27), text: "Here are the two laptops I'm deciding between. Which is better for editing photos?", images: [{ index: 0, thumb: DEMO.laptopA }, { index: 1, thumb: DEMO.laptopB }] },
-              { index: 1, role: 'assistant', time: null, text: 'For photo editing, the Volt 15 is the stronger pick: twice the memory makes big photo libraries feel smooth, and it is 400 g lighter to carry.\n\nThe Aero 14 is the better value if you mostly edit a few photos at a time. It is $250 cheaper, and 16 GB is enough for that.', images: [] },
-              { index: 2, role: 'user', time: t(26.5), text: 'Is it worth waiting for a sale?', images: [] },
-              { index: 3, role: 'assistant', time: null, text: 'Brightline usually takes 10 to 15% off the Volt 15 in late November, which would bring it close to your budget.', images: [] },
+              { index: 0, role: 'user', time: t(27), text: "Here's my bakery's homepage and a café site I love. How can mine feel as warm as theirs?", images: [{ index: 0, thumb: DEMO.home }, { index: 1, thumb: DEMO.reviews }] },
+              { index: 1, role: 'assistant', time: null, text: 'Yours already looks good. Three things would make it feel as warm:\n1. Put your opening hours and address near the top.\n2. Keep the orange for buttons only, so the next step always stands out.\n3. Show reviews as cards with a name and stars, like the café does. It feels more personal than a list.', images: [] },
+              { index: 2, role: 'user', time: t(26.5), text: 'Can you write a title for the reviews section?', images: [] },
+              { index: 3, role: 'assistant', time: null, text: 'What our neighbours say.', images: [] },
             ],
           };
         }

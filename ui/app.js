@@ -806,7 +806,7 @@ function openWelcome() {
   };
   const step = (n, title, body) => h('div', { class: 'w-step' }, h('div', { class: 'w-num' }, n), h('div', {}, h('b', {}, title), h('span', {}, body)));
   const modal = h('div', { class: 'modal welcome', role: 'dialog', 'aria-label': 'Welcome to Chipmunk' },
-    h('div', { class: 'w-hero' }, h('img', { src: 'assets/chip.png', alt: '' }), h('h3', {}, 'Show your AI everything.')),
+    h('div', { class: 'w-hero' }, h('img', { src: 'assets/chip.png', alt: '' }), h('h3', {}, 'Give your AI the whole picture.')),
     h('div', { class: 'w-body' },
       h('p', { class: 'w-lede' }, 'Collect screenshots, files and notes in one draft, then paste all of it into ChatGPT, Claude, Claude Code, Codex or Cursor in one go.'),
       step(1, 'Screenshot as usual', h('span', {}, 'While you work on a draft, every ', h('kbd', {}, K.shot()), ' lands here, numbered. Your own screenshots folder keeps its copy.')),

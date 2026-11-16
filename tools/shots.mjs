@@ -65,8 +65,9 @@ const evaluate = async (expression) => (await cdp('Runtime.evaluate', { expressi
 async function open(url, width, height, scale, dark = false) {
   await cdp('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: false });
   await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });
+  await evaluate('window.__oldPage = true');
   await cdp('Page.navigate', { url });
-  for (let i = 0; i < 60; i++) { await sleep(150); if (await evaluate('document.readyState') === 'complete') break; }
+  for (let i = 0; i < 80; i++) { await sleep(150); if (await evaluate(`!window.__oldPage && document.readyState === 'complete'`).catch(() => false)) break; }
   await evaluate('document.fonts.ready.then(() => true)');
   await sleep(600);
 }
@@ -86,7 +87,7 @@ await cdp('Runtime.enable');
 // 1. Demo captures the panel will show (2x, like a real high-DPI screenshot)
 await open(`${BASE}/docs/shots/scenes.html`, 1200, 4000, 2);
 const demo = {};
-for (const [id, small] of [['laptopA', 'demo-laptop-a'], ['laptopB', 'demo-laptop-b']]) {
+for (const [id, small] of [['home', 'demo-home'], ['order', 'demo-order'], ['reviews', 'demo-reviews']]) {
   const box = await evaluate(`(() => { const r = document.getElementById('${id}').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()`);
   const r = await cdp('Page.captureScreenshot', { format: 'png', clip: { ...box, scale: 1 } });
   demo[id] = 'data:image/png;base64,' + r.data;
@@ -94,6 +95,11 @@ for (const [id, small] of [['laptopA', 'demo-laptop-a'], ['laptopB', 'demo-lapto
   const t = await cdp('Page.captureScreenshot', { format: 'webp', quality: 92, clip: { ...box, scale: 0.2 } });
   await writeFile(join(ROOT, 'site/assets', small + '.webp'), Buffer.from(t.data, 'base64'));
   console.log('wrote', './site/assets/' + small + '.webp');
+}
+// `node tools/shots.mjs --scenes <folder>` stops here after saving the full-size scenes, for a quick look.
+if (process.argv[2] === '--scenes') {
+  for (const [id, url] of Object.entries(demo)) await writeFile(join(process.argv[3], id + '.png'), Buffer.from(url.split(',')[1], 'base64'));
+  ws.close(); browser.kill(); server.close(); process.exit(0);
 }
 await cdp('Page.addScriptToEvaluateOnNewDocument', { source: `window.__CHIPMUNK_DEMO = ${JSON.stringify(demo)};` });
 

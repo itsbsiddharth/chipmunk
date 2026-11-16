@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The welcome screen's headline is now "Give your AI the whole picture.", matching the website.
+
 ## 1.4.0 (2026-11-16)
 
 - Numbered screenshots with notes. Every screenshot in a draft shows a number (1, 2, 3), and each screenshot or file has a small "Add a note for the AI" field. When you send, images paste first, in order, so the AI app numbers them Image 1, 2, 3 (Claude Code shows `[Image #1]`). Your notes go with them as "Image 2: your note". You can also write "in image 2…" in the prompt.

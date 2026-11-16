@@ -50,7 +50,7 @@
   const send = $('#demo-send');
   const pointer = $('#demo-pointer');
   const steps = $$('.steps-ind li', demo);
-  const prompt = 'Which of these two laptops should I buy? I edit photos and travel a lot.';
+  const prompt = 'Fix these three things on my bakery’s website. Keep everything else the same.';
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const step = (n) => steps.forEach((s) => s.classList.toggle('on', Number(s.dataset.step) === n));
 

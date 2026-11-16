@@ -1,90 +1,138 @@
 <!doctype html>
-<!-- Demo "screenshots" used in the marketing images: two laptop product pages in a desktop
-     browser, the everyday example anyone gets ("help me pick a laptop"). tools/shots.mjs renders
-     each scene at 2x and hands them to the mock host and the website demo. All names are made up. -->
+<!-- Demo "screenshots" used in the marketing images. The story: you're building your bakery's
+     website and click through it in a desktop browser. You spot two problems and a café site whose
+     reviews you'd like to copy, screenshot each with a note, and send all three to your AI at once.
+     The AI can't see your site any other way. tools/shots.mjs renders each scene at 2x and hands
+     them to the mock host and the website demo. All names are made up. Earlier examples are kept
+     in docs/archive/. -->
 <html><head><meta charset="utf-8"><title>Chipmunk demo scenes</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; background: #ddd; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #111827; }
+  body { margin: 0; background: #ddd; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #1f1a16; }
   .scene { width: 1200px; height: 750px; overflow: hidden; position: relative; margin: 0 0 20px; background: #fff; display: flex; flex-direction: column; }
+  .serif { font-family: Georgia, "Times New Roman", serif; }
 
   /* desktop browser chrome */
   .tabs { height: 44px; background: #dee1e6; display: flex; align-items: flex-end; padding: 0 12px; gap: 4px; flex: none; }
   .tabs .dots { display: flex; gap: 8px; align-self: center; margin-right: 14px; }
   .tabs .dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
   .tabs .dots i:nth-child(1) { background: #ff5f57; } .tabs .dots i:nth-child(2) { background: #febc2e; } .tabs .dots i:nth-child(3) { background: #28c840; }
-  .tab { height: 34px; padding: 0 18px; border-radius: 10px 10px 0 0; font-size: 14px; display: flex; align-items: center; gap: 8px; color: #5f6368; width: 230px; white-space: nowrap; overflow: hidden; }
+  .tab { height: 34px; padding: 0 18px; border-radius: 10px 10px 0 0; font-size: 14px; display: flex; align-items: center; gap: 8px; color: #5f6368; width: 240px; white-space: nowrap; overflow: hidden; }
   .tab.on { background: #fff; color: #202124; }
-  .tab b { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+  .tab b { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .fav-crumb { background: #c2410c; } .fav-hearth { background: #3f6b4a; }
   .bar { height: 46px; display: flex; align-items: center; padding: 0 14px; gap: 14px; border-bottom: 1px solid #e5e7eb; flex: none; }
   .bar .nav { color: #9aa0a6; font-size: 18px; letter-spacing: 8px; }
   .bar .url { flex: 1; height: 32px; border-radius: 16px; background: #f1f3f4; display: flex; align-items: center; padding: 0 16px; font-size: 15px; color: #3c4043; }
   .bar .url s { text-decoration: none; color: #80868b; }
 
-  /* store page */
-  .site { height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 44px; border-bottom: 1px solid #f0f0f0; flex: none; }
-  .site .logo { font-weight: 800; font-size: 22px; letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
-  .site .logo i { width: 24px; height: 24px; border-radius: 7px; display: block; }
-  .site nav { display: flex; gap: 26px; font-size: 15px; color: #4b5563; }
-  .page { flex: 1; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; padding: 30px 44px; }
-  .art { border-radius: 18px; display: flex; align-items: center; justify-content: center; }
-  .laptop { width: 390px; }
-  .laptop .screen { height: 240px; border-radius: 14px 14px 4px 4px; border: 10px solid #1f2937; }
-  .laptop .base { height: 16px; margin: 0 -34px; border-radius: 0 0 14px 14px; }
-  .crumbs { font-size: 13px; color: #6b7280; margin-bottom: 6px; }
-  h1 { margin: 0; font-size: 44px; letter-spacing: -.02em; }
-  .stars { margin: 6px 0 14px; font-size: 16px; color: #f59e0b; } .stars span { color: #6b7280; font-size: 14px; margin-left: 6px; }
-  .price { font-size: 40px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 16px; }
-  .price small { font-size: 16px; font-weight: 500; color: #6b7280; margin-left: 8px; }
-  .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-  .specs div { border: 1px solid #e5e7eb; border-radius: 12px; padding: 9px 14px; font-size: 14px; color: #6b7280; }
-  .specs b { display: block; color: #111827; font-size: 19px; }
-  .buy { height: 54px; border-radius: 14px; color: #fff; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+  /* Little Crumb, the bakery site being built */
+  .crumb { background: #fffaf3; }
+  .crumb .site { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; border-bottom: 1px solid #f1e6d6; flex: none; }
+  .crumb .logo { font-family: Georgia, serif; font-size: 26px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #3b2414; }
+  .crumb .logo i { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f0b35e, #c2410c); display: block; }
+  .crumb nav { display: flex; gap: 30px; font-size: 16px; color: #6b5444; align-items: center; }
+  .crumb nav .pill { background: #c2410c; color: #fff; padding: 8px 18px; border-radius: 999px; font-weight: 600; }
 
-  /* A: Aero 14, in budget, heavier */
-  #laptopA .site .logo i { background: linear-gradient(135deg, #2563eb, #7c3aed); }
-  #laptopA .art { background: linear-gradient(160deg, #eef2ff, #dbe4ff); }
-  #laptopA .screen { background: radial-gradient(circle at 30% 30%, #93c5fd, #6366f1 55%, #312e81); }
-  #laptopA .base { background: linear-gradient(#d1d5db, #9ca3af); }
-  #laptopA .buy { background: #2563eb; }
-  /* B: Volt 15, lighter and faster, $250 more */
-  #laptopB .site .logo i { background: linear-gradient(135deg, #f97316, #db2777); }
-  #laptopB .art { background: linear-gradient(160deg, #fff7ed, #ffe4cc); }
-  #laptopB .screen { background: radial-gradient(circle at 70% 35%, #fdba74, #f43f5e 55%, #4c0519); }
-  #laptopB .base { background: linear-gradient(#4b5563, #1f2937); }
-  #laptopB .buy { background: #111827; }
+  .hero { flex: 1; display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; padding: 44px 48px 40px; }
+  .hero .copy { position: relative; padding-top: 16px; }
+  .kick { font-size: 14px; letter-spacing: .14em; color: #c2410c; font-weight: 700; margin-bottom: 18px; }
+  .hero h1 { font-family: Georgia, serif; font-size: 70px; line-height: 1.04; margin: 0 0 22px; color: #3b2414; letter-spacing: -.01em; }
+  .hero p { font-size: 21px; color: #6b5444; margin: 0; line-height: 1.5; }
+  /* the bug: the button sits on top of the headline */
+  .hero .cta { position: absolute; left: 70px; top: 128px; background: #c2410c; color: #fff; font-size: 21px; font-weight: 700; padding: 18px 34px; border-radius: 14px; box-shadow: 0 10px 24px -10px rgba(120,40,0,.6); }
+  .photo { border-radius: 26px; background: radial-gradient(circle at 70% 20%, #fde7c7, #f2c890 55%, #d99a59); position: relative; overflow: hidden; }
+  .board { position: absolute; left: 50px; right: 50px; bottom: 56px; height: 34px; border-radius: 18px; background: linear-gradient(#a86b3c, #7c4a26); }
+  .boule { position: absolute; left: 70px; bottom: 74px; width: 250px; height: 180px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 38% 30%, #f0c27a, #c47a35 58%, #8a4c1c); box-shadow: inset -12px -16px 30px rgba(80,30,0,.35); }
+  .boule::before, .boule::after { content: ""; position: absolute; width: 150px; height: 60px; border-top: 7px solid #f6dcae; border-radius: 50%; left: 50px; }
+  .boule::before { top: 46px; } .boule::after { top: 82px; transform: scaleX(.8); }
+  .baguette { position: absolute; right: 44px; bottom: 132px; width: 300px; height: 62px; border-radius: 40px; transform: rotate(-14deg); background: linear-gradient(#efc07a, #c27632 70%, #95561f); box-shadow: inset 0 -8px 14px rgba(80,30,0,.3); }
+  .baguette i { position: absolute; top: 14px; width: 44px; height: 9px; border-radius: 6px; background: #f7deb2; transform: rotate(-18deg); }
+  .bun { position: absolute; right: 140px; bottom: 84px; width: 120px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 40% 30%, #f4cf8e, #cf8a40 60%, #9a5a22); }
+
+  /* order page */
+  .order { flex: 1; display: grid; grid-template-columns: 1.15fr 1fr; gap: 44px; padding: 40px 48px; }
+  .order h1 { font-family: Georgia, serif; font-size: 52px; margin: 0 0 26px; color: #3b2414; }
+  .item { display: flex; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid #f1e6d6; font-size: 24px; }
+  .item .th { width: 76px; height: 76px; border-radius: 18px; flex: none; }
+  .item .th.a { background: radial-gradient(circle at 40% 35%, #f0c27a, #b8742f 65%, #8a4f1d); }
+  .item .th.b { background: radial-gradient(circle at 40% 35%, #f6d9a6, #d9964c 60%, #a8642a); }
+  .item .nm { flex: 1; font-weight: 600; color: #3b2414; } .item .nm small { display: block; font-weight: 400; font-size: 17px; color: #8a7262; margin-top: 2px; }
+  .item .pr { font-weight: 600; }
+  .sum { background: #fff; border: 1px solid #efe2cf; border-radius: 24px; padding: 30px 34px; align-self: start; box-shadow: 0 20px 40px -28px rgba(80,40,0,.35); }
+  .sum .row { display: flex; justify-content: space-between; font-size: 21px; color: #6b5444; padding: 8px 0; }
+  .sum .row b { color: #3b2414; font-weight: 600; }
+  .sum .total { border-top: 1px solid #efe2cf; margin-top: 12px; padding-top: 18px; display: flex; justify-content: space-between; align-items: baseline; }
+  .sum .total span { font-size: 26px; font-weight: 700; color: #3b2414; }
+  .sum .total b { font-size: 62px; font-weight: 800; color: #3b2414; letter-spacing: -.02em; }
+  .sum .place { margin-top: 22px; height: 64px; border-radius: 16px; background: #c2410c; color: #fff; font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* Hearth & Honey, the café site whose reviews you like */
+  .hearth { background: #f2f4ee; }
+  .hearth .site { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; flex: none; background: #fff; border-bottom: 1px solid #e3e8dd; }
+  .hearth .logo { font-family: Georgia, serif; font-style: italic; font-size: 27px; color: #2f4f38; display: flex; align-items: center; gap: 10px; }
+  .hearth .logo i { width: 24px; height: 24px; border-radius: 7px; background: #3f6b4a; display: block; transform: rotate(45deg) scale(.8); }
+  .hearth nav { display: flex; gap: 30px; font-size: 16px; color: #56685a; }
+  .reviews { flex: 1; padding: 46px 48px; text-align: center; }
+  .reviews .kick { color: #3f6b4a; }
+  .reviews h2 { font-family: Georgia, serif; font-size: 54px; margin: 0 0 34px; color: #23382a; font-weight: 400; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: left; }
+  .card { background: #fff; border-radius: 24px; padding: 28px 28px 24px; box-shadow: 0 22px 40px -30px rgba(30,60,40,.5); border: 1px solid #e3e8dd; }
+  .card .st { color: #e2a53a; font-size: 26px; letter-spacing: 3px; }
+  .card q { display: block; font-family: Georgia, serif; font-size: 23px; line-height: 1.35; color: #23382a; margin: 14px 0 22px; quotes: "\201C" "\201D"; }
+  .card .who { display: flex; align-items: center; gap: 12px; font-size: 17px; color: #56685a; }
+  .card .who i { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700; color: #fff; font-size: 18px; }
+  .card .who b { display: block; color: #23382a; font-size: 18px; }
 </style></head>
 <body>
-  <div class="scene" id="laptopA">
-    <div class="tabs"><span class="dots"><i></i><i></i><i></i></span><span class="tab on"><b style="background:#2563eb"></b>Aero 14 · Northwind</span><span class="tab"><b style="background:#f97316"></b>Volt 15 · Brightline</span></div>
-    <div class="bar"><span class="nav">← →</span><span class="url">northwind.shop<s>/laptops/aero-14</s></span></div>
-    <div class="site"><span class="logo"><i></i>Northwind</span><nav><span>Laptops</span><span>Tablets</span><span>Deals</span><span>Support</span></nav></div>
-    <div class="page">
-      <div class="art"><div class="laptop"><div class="screen"></div><div class="base"></div></div></div>
+  <!-- 1: your homepage, where the button covers the headline -->
+  <div class="scene crumb" id="home">
+    <div class="tabs"><span class="dots"><i></i><i></i><i></i></span><span class="tab on"><b class="fav-crumb"></b>Little Crumb Bakery</span><span class="tab"><b class="fav-hearth"></b>Reviews · Hearth &amp; Honey</span></div>
+    <div class="bar"><span class="nav">← →</span><span class="url">littlecrumb.shop</span></div>
+    <div class="site"><span class="logo"><i></i>Little Crumb</span><nav><span>Menu</span><span>Visit us</span><span>Reviews</span><span class="pill">Order</span></nav></div>
+    <div class="hero">
+      <div class="copy">
+        <div class="kick">NEIGHBOURHOOD BAKERY · SINCE 2019</div>
+        <h1>Fresh bread, baked every morning.</h1>
+        <p>Order by 9 pm. Pick it up warm at 7 am.</p>
+        <span class="cta">Order for pickup</span>
+      </div>
+      <div class="photo"><div class="board"></div><div class="baguette"><i style="left:60px"></i><i style="left:130px"></i><i style="left:200px"></i><i style="left:262px"></i></div><div class="boule"></div><div class="bun"></div></div>
+    </div>
+  </div>
+
+  <!-- 2: your order page, where the total is wrong -->
+  <div class="scene crumb" id="order">
+    <div class="tabs"><span class="dots"><i></i><i></i><i></i></span><span class="tab on"><b class="fav-crumb"></b>Your order · Little Crumb</span><span class="tab"><b class="fav-hearth"></b>Reviews · Hearth &amp; Honey</span></div>
+    <div class="bar"><span class="nav">← →</span><span class="url">littlecrumb.shop<s>/order</s></span></div>
+    <div class="site"><span class="logo"><i></i>Little Crumb</span><nav><span>Menu</span><span>Visit us</span><span>Reviews</span><span class="pill">Order</span></nav></div>
+    <div class="order">
       <div>
-        <div class="crumbs">Laptops › Everyday</div>
-        <h1>Aero 14</h1>
-        <div class="stars">★★★★☆<span>4.4 · 2,184 reviews</span></div>
-        <div class="price">$1,099<small>free delivery</small></div>
-        <div class="specs"><div><b>16 GB</b>memory</div><div><b>512 GB</b>storage</div><div><b>1.6 kg</b>weight</div><div><b>12 h</b>battery (claimed)</div></div>
-        <div class="buy">Add to cart</div>
+        <h1>Your order</h1>
+        <div class="item"><span class="th a"></span><span class="nm">Sourdough loaf<small>Quantity 1</small></span><span class="pr">$8.00</span></div>
+        <div class="item"><span class="th b"></span><span class="nm">Cinnamon rolls, box of 4<small>Quantity 1</small></span><span class="pr">$12.00</span></div>
+      </div>
+      <div class="sum">
+        <div class="row"><span>Subtotal</span><b>$20.00</b></div>
+        <div class="row"><span>Pickup</span><b>Tomorrow, 7:00 am</b></div>
+        <div class="total"><span>Total</span><b>$0.00</b></div>
+        <div class="place">Place order</div>
       </div>
     </div>
   </div>
 
-  <div class="scene" id="laptopB">
-    <div class="tabs"><span class="dots"><i></i><i></i><i></i></span><span class="tab"><b style="background:#2563eb"></b>Aero 14 · Northwind</span><span class="tab on"><b style="background:#f97316"></b>Volt 15 · Brightline</span></div>
-    <div class="bar"><span class="nav">← →</span><span class="url">brightline.store<s>/volt-15</s></span></div>
-    <div class="site"><span class="logo"><i></i>Brightline</span><nav><span>Shop</span><span>Creators</span><span>Compare</span><span>Help</span></nav></div>
-    <div class="page">
-      <div class="art"><div class="laptop"><div class="screen"></div><div class="base"></div></div></div>
-      <div>
-        <div class="crumbs">Shop › Creator laptops</div>
-        <h1>Volt 15</h1>
-        <div class="stars">★★★★★<span>4.7 · 936 reviews</span></div>
-        <div class="price">$1,349<small>or $112/mo</small></div>
-        <div class="specs"><div><b>32 GB</b>memory</div><div><b>1 TB</b>storage</div><div><b>1.2 kg</b>weight</div><div><b>10 h</b>battery (claimed)</div></div>
-        <div class="buy">Buy now</div>
+  <!-- 3: a café site whose reviews you'd like on yours -->
+  <div class="scene hearth" id="reviews">
+    <div class="tabs"><span class="dots"><i></i><i></i><i></i></span><span class="tab"><b class="fav-crumb"></b>Little Crumb Bakery</span><span class="tab on"><b class="fav-hearth"></b>Reviews · Hearth &amp; Honey</span></div>
+    <div class="bar"><span class="nav">← →</span><span class="url">hearthandhoney.cafe<s>/reviews</s></span></div>
+    <div class="site"><span class="logo"><i></i>Hearth &amp; Honey</span><nav><span>Menu</span><span>Our story</span><span>Reviews</span><span>Find us</span></nav></div>
+    <div class="reviews">
+      <div class="kick">KIND WORDS</div>
+      <h2>What our regulars say</h2>
+      <div class="cards">
+        <div class="card"><div class="st">★★★★★</div><q>The cardamom buns are worth the early alarm.</q><div class="who"><i style="background:#c0794a">P</i><span><b>Priya S.</b>Comes every Saturday</span></div></div>
+        <div class="card"><div class="st">★★★★★</div><q>Best coffee on the street, and they remember my order.</q><div class="who"><i style="background:#3f6b4a">T</i><span><b>Tom R.</b>Regular since 2021</span></div></div>
+        <div class="card"><div class="st">★★★★★</div><q>Warm, quiet, and the bread is perfect every time.</q><div class="who"><i style="background:#7a5aa8">A</i><span><b>Ana M.</b>Visited in October</span></div></div>
       </div>
     </div>
   </div>

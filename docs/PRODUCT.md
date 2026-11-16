@@ -11,7 +11,7 @@ People give AI apps context made of pictures and words: a few screenshots, an er
 - prompts lost when a chat box resets,
 - screenshots the model can't tell apart.
 
-Chipmunk's job: **show your AI everything, in one paste, in order, with what you want it to notice.**
+Chipmunk's job: **give your AI the whole picture, in one paste, in order, with what you want it to notice.**
 
 ## What the research said
 
@@ -42,6 +42,12 @@ Chipmunk's job: **show your AI everything, in one paste, in order, with what you
 - **Agent status on Chip** ("Claude Code finished"). It's useful, but Codex pets and OpenPets already do it. We'll revisit if users ask.
 - **Pinned project context** that's attached to every draft. It's a real pain (re-explaining context), but drafts, Duplicate and Past chats cover most of it today.
 - **Cleaning up the Screenshots folder.** It's a weak pain, and Windows owns that folder.
+
+## How we pitch it
+
+- **Headline: "Give your AI the whole picture."** We tried three. "Show your AI everything" sounded like a tool that watches your screen, the opposite of what Chipmunk does since 1.4. "Ten screenshots. One paste." was concrete, but it made Chipmunk sound like a screenshot clipboard. "The whole picture" names the outcome (the AI understands your situation, not just one image), plays on "pictures", and is a phrase everyone already knows. The line under it gives the concrete part: screenshots, files and notes, numbered, with a note on each, into the AI app you already use.
+- **Example: fixing three things on your bakery's website.** The example has to be something people really do, where a screenshot is the only practical way because the AI can't see the thing otherwise, and where several screenshots with a note each make sense. Fixing problems you spot across a few screens of something you're building is the most common real pattern (the Cursor forum's screenshot threads, Claude Code debugging write-ups, guides on giving agents screenshots). A small business website keeps it clear for people who don't write code, and every shot is a desktop browser window, so nobody reads it as a phone app. Two screenshots show problems ("The button covers the headline", "Total should be $20, not $0"), one shows a café site to copy ("Make our reviews look like this"), and it all goes to Claude Code in one paste.
+- **Dropped examples:** a phone sign-in bug (read as a phone app) and picking a laptop (people just ask the AI; nobody screenshots shop pages). Their images are in `docs/archive/`.
 
 ## How we'll know it works
 

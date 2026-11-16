@@ -1,6 +1,6 @@
 # Chipmunk: guide for working on this project
 
-Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collect screenshots, files and notes into one draft, then one click pastes all of it into ChatGPT, Claude, Claude Code, Codex, Cursor or Antigravity. Read README.md for features, CHANGELOG.md for history (1.0 to 1.4) and docs/PRODUCT.md for why things are the way they are (research, decisions, what we chose not to build).
+Chipmunk is a free, open-source app for Windows, with a Mac beta (by Siddharth, bsid.dev). You collect screenshots, files and notes into one draft, then one click pastes all of it into ChatGPT, Claude, Claude Code, Codex, Cursor or Antigravity. Read README.md for features, CHANGELOG.md for history (1.0 to 1.4) and docs/PRODUCT.md for why things are the way they are (research, decisions, what we chose not to build).
 
 ## Live things
 
@@ -14,6 +14,7 @@ Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collec
 
 - Product quality bar: feels like a top YC startup. Premium, calm, clean, intuitive for non-programmers. Fast and light (idle CPU near zero). Nothing that feels "old school" or cluttered. Every feature must earn its place; cut what doesn't help most people.
 - Look: warm paper palette (bg #f7f6f2, ink #1d1b18, accent #b5602a), serif display headings (Sitka in the app, Instrument Serif on the site), rounded corners, soft shadows, light and dark themes. Chip the chipmunk mascot is the brand; keep it helpful, never annoying, always optional.
+- Pitch: headline "Give your AI the whole picture.", example "Fix my bakery's website" (see docs/PRODUCT.md, "How we pitch it"). Examples must be things people really do, on a desktop, that anyone understands.
 - Explanations: plain language, specific steps, like talking to a non-programmer. Concise and structured.
 - Git: commit messages are short, plain and human. Never add a Co-Authored-By line or any mention of AI. Don't push to the user's other repos without saying so first.
 - Ship to the end: build, test it really works, then release and deploy. Publish GitHub releases only when the user approves that release.
@@ -26,7 +27,7 @@ Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collec
 - `ui/` the panel (vanilla HTML/CSS/JS). `ui/mock-host.js` lets the UI run in a normal browser for design work (`python tools\devserver.py`, then http://localhost:5178).
 - `setup/Setup.cs` the installer. The app files get embedded into it at package time.
 - `mac/` the Mac app (Swift, menu bar + WKWebView around the same `ui/`). `mac/scripts/build-app.sh` builds Chipmunk.app; `.github/workflows/mac.yml` tests, builds and smoke-tests it on GitHub's Mac runners (there is no Mac here, so CI is the only compiler). The panel picks key names and hidden features from `settings.platform` / `settings.features`.
-- `extension/` optional Chrome/Edge extension. `site/` the website. `docs/` README images and `og.html` (source of the social card `site/assets/og.png`). `tools/stats.ps1` downloads/stars/traffic report.
+- `extension/` optional Chrome/Edge extension. `site/` the website. `docs/` holds the README images; `hero.html`, `og.html` and `shots/scenes.html` are their sources, and `archive/` keeps earlier marketing sets. `node tools/shots.mjs` re-renders every marketing image (README, site, social card, animated demo) sharp from source; never use real screenshots. `tools/stats.ps1` downloads/stars/traffic report.
 
 ## Build, test, release
 
@@ -43,5 +44,5 @@ Chipmunk is a free, open-source Windows app (by Siddharth, bsid.dev). You collec
 ## Known gaps
 
 - Not code-signed, so Windows SmartScreen warns on first run (site and README explain "More info, Run anyway"). Fixing it needs a paid certificate the user would buy.
-- Mac is not supported.
+- The Mac app is a beta, built and tested only in CI. Nobody has tried it on a real Mac yet.
 - The bsid.dev redesign (branch `redesign-bakugo`, unreleased, with the user's uncommitted work) gets its Chipmunk entry from the local branch `add-chipmunk-redesign`; merge it when the redesign ships.
