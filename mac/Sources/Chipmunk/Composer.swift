@@ -5,7 +5,7 @@ import Foundation
 enum Composer {
     /// Images are pasted first, in draft order, so the AI app numbers them Image 1, 2, 3.
     /// Notes are labeled with the same numbers, the way Anthropic's vision guide recommends.
-    static func build(prompt: String, attachments: [Attachment], pathOf: (Attachment) -> URL?, withPaths: Bool) -> String {
+    static func build(prompt: String, attachments: [Attachment], pathOf: @escaping (Attachment) -> URL?, withPaths: Bool) -> String {
         let list = attachments.filter { $0.include }
         let exists: (Attachment) -> Bool = { a in
             guard let p = pathOf(a) else { return false }

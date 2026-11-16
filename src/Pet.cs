@@ -196,6 +196,7 @@ namespace Chipmunk
 
         void OnDown(object s, MouseEventArgs e)
         {
+            Log.Info("DBG pet down " + e.Button + " at " + e.Location + " petRect " + petRect);
             if (e.Button != MouseButtons.Left || !petRect.Contains(e.Location)) return;
             mouseDown = true;
             dragging = false;
@@ -215,6 +216,7 @@ namespace Chipmunk
 
         void OnUp(object s, MouseEventArgs e)
         {
+            Log.Info("DBG pet up " + e.Button + " at " + e.Location + " mouseDown " + mouseDown + " dragging " + dragging);
             if (BubbleVisible && bubbleRect.Contains(e.Location) && !mouseDown)
             {
                 // A bubble with two choices ("Add a note" · "Undo") runs the one you clicked.
