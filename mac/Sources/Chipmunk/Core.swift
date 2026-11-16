@@ -402,7 +402,11 @@ final class Core: NSObject {
             "id": a.id, "kind": a.kind, "name": a.name, "source": a.source ?? NSNull(), "include": a.include, "note": a.note ?? NSNull(),
             "w": a.w, "h": a.h, "bytes": NSNumber(value: a.bytes), "ext": a.ext ?? NSNull(), "text": a.text ?? NSNull(), "linked": a.linkPath != nil,
         ]
-        x["url"] = a.kind == "link" || a.kind == "text" ? (a.url ?? NSNull()) : (a.file != nil ? fileUrl(d, a) : NSNull())
+        let url: Any
+        if a.kind == "link" || a.kind == "text" { url = a.url as Any? ?? NSNull() }
+        else if a.file != nil { url = fileUrl(d, a) }
+        else { url = NSNull() }
+        x["url"] = url
         if let p = store.filePath(d, a) {
             x["path"] = p.path
             if a.linkPath != nil && !FileManager.default.fileExists(atPath: p.path) { x["missing"] = true }
@@ -690,7 +694,8 @@ final class Core: NSObject {
                         found = true
                     }
                 }
-                done?(["update": found ? (self.update ?? NSNull()) : NSNull(), "version": Core.version])
+                let u: Any = found ? (self.update as Any? ?? NSNull()) : NSNull()
+                done?(["update": u, "version": Core.version])
             }
         }.resume()
     }
