@@ -94,7 +94,8 @@ h3 { font-size: 17px; line-height: 1.35; margin: 0 0 8px; font-weight: 600; lett
 
 .win.panel { right: 0; top: 0; width: 40%; height: 440px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #fdfcfa; transition: transform .5s ease; }
 .p-head { display: flex; align-items: center; gap: 9px; font-size: 14.5px; }
-.p-head img { border-radius: 5px; }
+.p-head .p-list { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; }
+.shot .n { position: absolute; left: 5px; top: 5px; min-width: 16px; height: 16px; border-radius: 8px; background: rgba(24, 22, 19, .78); color: #fff; font: 700 9.5px/16px var(--sans, system-ui); font-style: normal; text-align: center; box-shadow: 0 0 0 1.2px rgba(255, 255, 255, .85); }
 .p-head b { font-family: var(--serif); font-weight: 400; font-size: 19px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .p-saved { margin-left: auto; font-size: 11.5px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 5px; }
 .p-saved::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }

@@ -138,6 +138,15 @@ Prefer not to install? Download the portable **`Chipmunk-win-x64.zip`** from the
 
 Needs Windows 10 or 11 with the Microsoft Edge WebView2 Runtime, which is built into Windows 11. If a PC lacks it, the installer says so and offers a button to get it.
 
+### Mac (beta)
+
+1. Download **`Chipmunk-mac.zip`** from the [latest release](https://github.com/itsbsiddharth/chipmunk/releases/latest) and unzip it. Move **Chipmunk.app** to Applications.
+2. The app isn't notarized yet, so the first time, right-click it and choose **Open**, then **Open** again.
+3. Chipmunk sits in the menu bar. Click it to open your draft; right-click for **Send to**, Snip and more.
+4. The first time you send, macOS asks to let Chipmunk paste for you: turn it on in **System Settings > Privacy & Security > Accessibility**.
+
+On a Mac, screenshots you take with ⌘⇧3, ⌘⇧4 or ⌘⇧5 land in the draft while you're working on it, exactly as on Windows, and stay on your Desktop too. Shortcuts: `Ctrl+Option+P` opens Chipmunk, `Ctrl+Option+S` snips, `Ctrl+Option+C` grabs a selection, `Ctrl+Option+V` sends. The beta doesn't have Chip, Past chats, the browser extension or the MCP server yet. Drafts use the same folder format as Windows (`Documents/Chipmunk`).
+
 ### Updates
 
 Chipmunk checks GitHub for a new release about once a day, when installed with the setup. When there's one, an **Update to X** pill appears in the panel, Chip offers it and the tray menu shows it. One click downloads the new setup and updates in a few seconds. To turn this off, clear **Keep Chipmunk up to date** in Settings.
@@ -202,7 +211,7 @@ To install it (Chrome, Edge, Brave):
 
 **Do files get duplicated on disk?** Screenshots and small files are copied into the draft, so it still works if you move or delete the originals. Files over 25 MB are linked instead of copied.
 
-**Mac?** Not yet. Chipmunk is Windows-first because that's where tools like this are missing.
+**Mac?** Yes, as a beta. See [Mac (beta)](#mac-beta).
 
 ## Build from source
 

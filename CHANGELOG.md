@@ -10,6 +10,8 @@
 - Chip changes: click Chip to open your draft (it used to open a menu). Right-click Chip for the menu: Send to any open AI app, Snip, Past chats, Collect every screenshot and Hide Chip. Drop anything on Chip to collect it, and its badge counts items. Chip and its bubbles never appear in your screenshots or screen recordings. Chip is optional, and the welcome screen now asks whether to show it.
 - The panel header no longer repeats the logo next to the window title, and the Drafts button now sits on the left of the title.
 - Fixed: turning on "Keep the panel on top" (or minimizing, or a display scale change) could leave the panel drawn in only the top part of the window, with a blank area below that couldn't scroll. The page now always fills the window.
+- Granola joins the dictation apps Chipmunk recognizes.
+- **Chipmunk for Mac (beta).** A menu bar app with the same panel and the same draft format. It collects ⌘⇧3/4/5 screenshots while you work on a draft, numbers them, and pastes everything into your AI app (needs the Accessibility permission). It doesn't have Chip, Past chats, the browser extension or MCP yet. Download `Chipmunk-mac.zip` from the release.
 - Welcome screen rewritten: "Show your AI everything." Three steps: screenshot as usual, say what matters (notes, or "in image 2"), send with Ctrl+Enter.
 
 ## 1.3.0 (2026-11-16)
