@@ -1,0 +1,30 @@
+name: Mac build
+
+on:
+  push:
+    paths: ["mac/**", "ui/**", ".github/workflows/mac.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        working-directory: mac
+        run: swift test
+      - name: Build Chipmunk.app
+        run: bash mac/scripts/build-app.sh
+      - name: Smoke test (the app starts and stays up)
+        run: |
+          ./mac/build/Chipmunk.app/Contents/MacOS/Chipmunk --profile "$RUNNER_TEMP/chipmunk-profile" --background &
+          PID=$!
+          sleep 8
+          kill -0 $PID
+          test -f "$RUNNER_TEMP/chipmunk-profile/settings.json"
+          kill $PID
+          cat "$RUNNER_TEMP/chipmunk-profile/chipmunk.log"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chipmunk-mac
+          path: mac/build/Chipmunk-mac.zip

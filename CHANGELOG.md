@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0 (2026-11-16)
+
+- Numbered screenshots with notes. Every screenshot in a draft shows a number (1, 2, 3), and each screenshot or file has a small "Add a note for the AI" field. When you send, images paste first, in order, so the AI app numbers them Image 1, 2, 3 (Claude Code shows `[Image #1]`). Your notes go with them as "Image 2: your note". You can also write "in image 2…" in the prompt.
+- Personal screenshots stay personal. Screenshots go into the draft by themselves only while you're working on it: the panel is in front, or you used it in the last few minutes. A panel that's just open behind other windows no longer grabs them. Otherwise Chip asks "Add this screenshot to your draft?" (one click). If Chip is hidden and the panel is open, the panel shows the same question.
+- "Keep collecting when hidden" is now "Collect every screenshot". When on, every screenshot from any app goes in, Chip shows a small glowing dot, the tray tooltip says so, and it turns itself off when you send.
+- Every screenshot that lands shows a one-line confirmation ("Image 3 added to …") with **Add a note** and **Undo**.
+- Windows still saves every screenshot to `Pictures\Screenshots`. Chipmunk only copies from the clipboard, so nothing is taken out of your Screenshots folder.
+- Chip changes: click Chip to open your draft (it used to open a menu). Right-click Chip for the menu: Send to any open AI app, Snip, Past chats, Collect every screenshot and Hide Chip. Drop anything on Chip to collect it, and its badge counts items. Chip and its bubbles never appear in your screenshots or screen recordings. Chip is optional, and the welcome screen now asks whether to show it.
+- The panel header no longer repeats the logo next to the window title, and the Drafts button now sits on the left of the title.
+- Fixed: turning on "Keep the panel on top" (or minimizing, or a display scale change) could leave the panel drawn in only the top part of the window, with a blank area below that couldn't scroll. The page now always fills the window.
+- Welcome screen rewritten: "Show your AI everything." Three steps: screenshot as usual, say what matters (notes, or "in image 2"), send with Ctrl+Enter.
+
 ## 1.3.0 (2026-11-16)
 
 - One-file installer: `Chipmunk-Setup.exe`, about 0.5 MB. It installs for the current Windows user with no admin prompt, adds Start menu and desktop shortcuts, and registers in Settings > Apps. Running it again updates in place. The portable zip is still offered.

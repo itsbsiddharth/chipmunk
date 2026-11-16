@@ -9,19 +9,18 @@
 <body>
 <div id="app" class="app preload">
   <header class="topbar">
-    <img class="brand" src="assets/icon.png" alt="Chipmunk" width="24" height="24">
+    <button class="icon-btn" id="btn-drafts" title="All drafts (Ctrl+K)" aria-label="All drafts"></button>
     <input id="title" class="title-input" placeholder="Untitled draft" spellcheck="false" maxlength="120" aria-label="Draft title">
     <button class="update-pill" id="btn-update" hidden></button>
-    <button class="icon-btn" id="btn-drafts" title="All drafts (Ctrl+K)" aria-label="All drafts"></button>
     <button class="icon-btn" id="btn-new" title="New draft (Ctrl+N)" aria-label="New draft"></button>
     <button class="icon-btn" id="btn-more" title="More" aria-label="More actions"></button>
     <button class="icon-btn" id="btn-settings" title="Settings (Ctrl+,)" aria-label="Settings"></button>
   </header>
   <div class="subbar">
     <span id="save-state" class="save-state"><span class="dot"></span><span class="txt">Saved</span></span>
-    <label class="switch-label collect" id="collect" title="Screenshots you take while this panel is open land here automatically. Turn this on to keep collecting while it's hidden.">
+    <label class="switch-label collect" id="collect" title="Screenshots you take while working here land in this draft by themselves. Turn this on to catch every screenshot from anywhere, until you send.">
       <span class="pulse"></span>
-      <span>Keep collecting when hidden</span>
+      <span>Collect every screenshot</span>
       <input type="checkbox" id="collect-toggle">
       <span class="switch"></span>
     </label>
@@ -29,7 +28,7 @@
   <main id="scroll" class="scroll">
     <div class="doc" id="doc">
       <textarea id="editor" class="editor" spellcheck="true" aria-label="Prompt"
-        placeholder="What do you want the AI to do? Type it, or dictate it with Wispr Flow or Win+H."></textarea>
+        placeholder="What should the AI do? Type or dictate. Mention a screenshot by its number, like “in image 2…”"></textarea>
       <div class="doc-foot">
         <button class="dictation" id="dictation" type="button"></button>
         <span class="doc-meta" id="word-count"></span>

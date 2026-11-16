@@ -5,9 +5,9 @@
 <h1 align="center">Chipmunk</h1>
 
 <p align="center">
-  <b>Gather context from anywhere. Hand it to any AI in one click.</b><br>
-  Screenshot, grab and drop from any app or website, reuse pieces of past chats, and send every screenshot,<br>
-  file and word to ChatGPT, Claude, Codex, Antigravity, Cursor or Claude Code at once.
+  <b>Show your AI everything.</b><br>
+  Screenshots, files and notes, into ChatGPT, Claude, Claude Code, Codex or Cursor in one paste.<br>
+  Numbered, in order, with your notes attached.
 </p>
 
 <p align="center">
@@ -29,6 +29,8 @@ Your AI is only as good as the context you give it, and giving it context is sti
 - Then you attach everything one by one, switching back and forth between apps.
 - Next week you want the same prompt and screenshots in another chat, and you dig through old conversations to rebuild it.
 
+On Windows it's worse with coding tools. Pasting screenshots into Claude Code, Codex or Cursor is unreliable: Ctrl+V or Alt+V, only one of several images attaching, images in the wrong order. Chipmunk pastes every image in order, or as `@file` paths for Claude Code in a terminal, every time.
+
 **Chipmunk fixes that.** It collects everything into one draft as you work, lets you pull in pieces of any past chat, and hands the whole bundle to the AI you're using in one click.
 
 ## How it works
@@ -39,7 +41,7 @@ Three steps: **open it** (`Win+Alt+P`, or click Chip), **throw things in**, **se
 
 | | |
 |---|---|
-| **Screenshots** | Take them the normal way (`Win+Shift+S`, Print Screen). While the Chipmunk panel is open, each one lands in the draft by itself. No toggle. To collect while the panel is closed, turn on **Keep collecting when hidden**. |
+| **Screenshots** | Take them the normal way (`Win+Shift+S`, Print Screen). While you're working on a draft (the panel is in front, or you used it in the last few minutes), each one lands in it by itself, with a number. Otherwise Chip asks "Add this screenshot to your draft?" and it takes one click. Your personal screenshots stay personal. To collect everything from any app, turn on **Collect every screenshot**: Chip shows a small glowing dot, and it turns itself off when you send. Windows still saves every screenshot to `Pictures\Screenshots`, and Chipmunk only copies from the clipboard, so nothing is taken out of that folder. |
 | **Grab** | Highlight text in any app and press `Win+Alt+C`. It's saved as a quote that remembers where it came from. Copying from a browser keeps the page link with the quote. |
 | **Paste / drop** | Paste text, images and files into the draft, or drop them on the panel. |
 | **Past chats** | Pick prompts, replies and images from earlier Claude Code, Codex, Antigravity, ChatGPT, Claude or Gemini chats. [More below](#past-chats). |
@@ -47,7 +49,8 @@ Three steps: **open it** (`Win+Alt+P`, or click Chip), **throw things in**, **se
 
 **2. Shape it**
 
-- Type, or dictate with the app you already use: **Wispr Flow, Superwhisper, Aqua or Windows voice typing (`Win+H`)** all type straight into the draft. Chipmunk spots which one is running and shows its shortcut.
+- Type, or dictate with the app you already use: **Wispr Flow, Granola, Superwhisper, Aqua or Windows voice typing (`Win+H`)** all type straight into the draft. Chipmunk spots which one is running and shows its shortcut.
+- **Notes.** Every screenshot shows a number (1, 2, 3), and each screenshot or file has a small **Add a note for the AI** field. When you send, the images paste first, in order, so the AI app numbers them Image 1, 2, 3 (Claude Code shows `[Image #1]`). Your notes go with them as "Image 2: your note". Labeling images this way is what Anthropic's own vision guide recommends. You can also just write "in image 2…" in the prompt. When a screenshot lands, a one-line confirmation ("Image 3 added to …") offers **Add a note** and **Undo**.
 - The editor **saves on every keystroke**, keeps a version every minute, and deleted drafts go to a trash you can undo.
 - Want a checklist? Open the **...** menu and choose **Add a reminder of what to attach**. Write "screenshot of the error" and the next matching capture ticks it off. Chipmunk warns you before you send with something missing.
 - Reorder attachments, or leave one out without deleting it. You see roughly how many tokens it all costs.
@@ -71,14 +74,16 @@ Three steps: **open it** (`Win+Alt+P`, or click Chip), **throw things in**, **se
 
 ## Meet Chip
 
-Chip is the chipmunk that sits at the edge of your screen. It's there to save you trips back to the panel:
+Chip is the chipmunk that sits at the edge of your screen. It stays quiet unless it can save you a trip:
 
-- **Click Chip for its menu.** Your draft sits at the top, with image thumbnails and counts. Below it, **Send to** lists each open AI app with its real icon, then Other windows, Open Chipmunk, Snip into draft, Past chats and Hide Chip. Arrows, Enter and Esc work. Right-click the tray icon for the same menu, plus New draft, **Keep collecting when hidden**, **Show Chip**, Settings and Quit.
-- **It speaks up when it can help.** Switch to ChatGPT with a draft ready and Chip offers to paste it ("5 items ready for ChatGPT. Click me to paste it in"). Take a screenshot while the panel is closed and it offers to keep it. One click, or ignore it and the bubble fades.
-- **It tells you what happened** ("Sent 2 images + your text to Claude") instead of popping notifications. When Chip is hidden, notifications follow your light or dark theme.
-- **Drop anything on it** to collect it. The badge shows how much is in your draft.
+- **Click Chip to open your draft.**
+- **Right-click Chip for the menu.** Send to any open AI app (each with its real icon), Snip, Past chats, **Collect every screenshot** and Hide Chip. Arrows, Enter and Esc work. The tray icon's menu adds New draft, **Show Chip**, Settings and Quit.
+- **Drop anything on it** to collect it: files, images, links or text. Its badge counts the items in your draft.
+- **You always know what's being collected.** When **Collect every screenshot** is on, Chip shows a small glowing dot and the tray tooltip says so.
+- **It speaks up when it can help.** Switch to ChatGPT with a draft ready and Chip offers to paste it. Take a screenshot while you're not working on a draft and it asks "Add this screenshot to your draft?" One click, or ignore it and the bubble fades. If Chip is hidden and the panel is open, the panel shows the same question.
+- **Never in your screenshots.** Chip and its bubbles don't appear in your screenshots or screen recordings.
 
-Chip hides during fullscreen games, videos and presentations, and uses almost no CPU while idle. Don't want it? Turn off **Settings → Chip**, or just its suggestions.
+Chip hides during fullscreen games, videos and presentations, and uses almost no CPU while idle. It's optional: the welcome screen asks whether to show it, and **Settings → Chip** turns it off, or just its suggestions.
 
 ## Past chats
 
@@ -179,7 +184,15 @@ To install it (Chrome, Edge, Brave):
 
 ## FAQ
 
-**Does it work with Wispr Flow?** Yes. Click in the prompt and use Wispr Flow as you always do; it types into the draft. The same goes for Superwhisper, Aqua and Windows voice typing.
+**Will it grab my personal screenshots?** No. Screenshots go into the draft by themselves only while you're working on it: the panel is in front, or you used it in the last few minutes. A panel that's just open behind other windows doesn't grab them. Otherwise Chip asks "Add this screenshot to your draft?" and it takes one click. **Collect every screenshot** is off unless you turn it on, and it turns itself off when you send.
+
+**Does it take screenshots out of my Screenshots folder?** No. Windows still saves every screenshot to `Pictures\Screenshots`. Chipmunk only copies from the clipboard, so nothing is taken out of that folder.
+
+**How do I point the AI at one screenshot?** Every screenshot has a number and an **Add a note for the AI** field. The AI app numbers the images Image 1, 2, 3 in the order they paste, and your notes go with them ("Image 2: the button is cut off"). You can also write "in image 2…" in your prompt.
+
+**Do I have to use Chip? Will it clash with my Codex pet?** Chip is optional, with one switch in Settings, and the welcome screen asks whether to show it. It never appears in your screenshots and doesn't take any shortcut a pet uses. Many people run Chipmunk with Chip off and just press `Win+Alt+P`.
+
+**Does it work with Wispr Flow?** Yes. Click in the prompt and use Wispr Flow as you always do; it types into the draft. The same goes for Granola, Superwhisper, Aqua and Windows voice typing.
 
 **Can I get chats from the ChatGPT desktop app?** The app stores chats in your OpenAI account, not on your PC. Import your ChatGPT data export (Settings → Data controls → Export data) to bring in every chat at once. To save one chat at a time, open it on chatgpt.com and use **Save this chat** from the optional extension.
 

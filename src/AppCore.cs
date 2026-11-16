@@ -87,7 +87,7 @@ namespace Chipmunk
         static readonly HashSet<string> SnipProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ScreenClippingHost", "SnippingTool", "ScreenSketch" };
         static readonly HashSet<string> TerminalClasses = new HashSet<string> { "CASCADIA_HOSTING_WINDOW_CLASS", "ConsoleWindowClass", "mintty", "VirtualConsoleClass", "PuTTY" };
         static readonly HashSet<string> TerminalProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "WindowsTerminal", "wezterm-gui", "alacritty", "Tabby", "Hyper", "kitty", "warp" };
-        static readonly string[] DictationApps = { "Wispr Flow", "WisprFlow", "Aqua", "AquaVoice", "Willow", "Superwhisper", "Spokenly", "VoiceInk" };
+        static readonly string[] DictationApps = { "Wispr Flow", "WisprFlow", "Aqua", "AquaVoice", "Willow", "Superwhisper", "Spokenly", "VoiceInk", "Granola" };
         static readonly Dictionary<string, string> AppNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "chrome", "Chrome" }, { "msedge", "Edge" }, { "firefox", "Firefox" }, { "brave", "Brave" }, { "opera", "Opera" }, { "vivaldi", "Vivaldi" },
@@ -226,7 +226,10 @@ namespace Chipmunk
             return t;
         }
 
-        void UpdateTrayText() { }
+        void UpdateTrayText()
+        {
+            if (tray != null) tray.Text = collect ? "Chipmunk · collecting every screenshot" : "Chipmunk";
+        }
 
         // ---------------- Chip and tray menu ----------------
 
@@ -296,7 +299,7 @@ namespace Chipmunk
             {
                 items.Add(new PopItem { Label = "New draft", Glyph = "plus", Run = () => { ShowPanel(); NewDraftFromOutside(); } });
                 items.Add(PopItem.Sep());
-                items.Add(new PopItem { Kind = PopItem.Kinds.Toggle, Label = "Keep collecting when hidden", On = collect, Run = () => SetCollect(!collect) });
+                items.Add(new PopItem { Kind = PopItem.Kinds.Toggle, Label = "Collect every screenshot", Sub = "Until you send", On = collect, Run = () => SetCollect(!collect) });
                 items.Add(new PopItem { Kind = PopItem.Kinds.Toggle, Label = "Show Chip", On = Settings.showPet, Run = () => SetPetVisible(!Settings.showPet) });
                 items.Add(PopItem.Sep());
                 items.Add(new PopItem { Label = "Settings", Glyph = "sliders", Run = () => ShowView("settings") });
@@ -304,6 +307,7 @@ namespace Chipmunk
             }
             else
             {
+                items.Add(new PopItem { Kind = PopItem.Kinds.Toggle, Label = "Collect every screenshot", Sub = "Until you send", On = collect, Run = () => SetCollect(!collect) });
                 items.Add(PopItem.Sep());
                 items.Add(new PopItem { Label = "Hide Chip", Glyph = "eyeOff", Muted = true, Run = () => SetPetVisible(false) });
             }
@@ -384,6 +388,7 @@ namespace Chipmunk
             win.Activate();
             Native.Focus(win.Handle);
             panelWasLastForeground = true;
+            panelActiveAt = DateTime.UtcNow;
             win.Emit("target", TargetDto(DefaultTarget()));
             win.FocusPage();
         }
@@ -432,7 +437,7 @@ namespace Chipmunk
             if (!changed && ++quietTicks < 4) return;
             quietTicks = 0;
             pet.SetSuppressed(IsFullscreen(fg));
-            if (Native.Root(fg) == win.Handle) { panelWasLastForeground = true; return; }
+            if (Native.Root(fg) == win.Handle) { panelWasLastForeground = true; panelActiveAt = DateTime.UtcNow; return; }
             if (!IsExternal(fg)) return;
             panelWasLastForeground = false;
             SetTarget(fg);
@@ -447,6 +452,16 @@ namespace Chipmunk
 
         IntPtr lastForeground, lastFgRaw;
         int quietTicks;
+        DateTime panelActiveAt = DateTime.MinValue;
+
+        /// <summary>You're putting a draft together right now: the panel is on screen and you were in
+        /// it within the last few minutes. Screenshots taken then go straight in. A panel that's merely
+        /// open behind your other windows doesn't count, so personal screenshots stay personal.</summary>
+        bool Composing()
+        {
+            if (!win.Visible || win.WindowState == FormWindowState.Minimized) return false;
+            return PanelIsForeground() || DateTime.UtcNow - panelActiveAt < TimeSpan.FromMinutes(3);
+        }
         DateTime snipSeenAt = DateTime.MinValue, lastImageOffer = DateTime.MinValue;
         readonly Dictionary<string, DateTime> sendOffers = new Dictionary<string, DateTime>();
 
@@ -473,23 +488,71 @@ namespace Chipmunk
         /// Chip offers to keep it, so you don't have to come back to the panel.</summary>
         void OfferImage()
         {
-            if (!pet.IsShowing || !Settings.petHints || PanelIsForeground()) return;
+            if (PanelIsForeground()) return;
+            bool viaChip = pet.IsShowing && Settings.petHints;
+            if (!viaChip && !win.Visible) return; // nobody asked: a personal screenshot stays personal
             if (!Native.IsClipboardFormatAvailable(2) && !Native.IsClipboardFormatAvailable(8)) return; // CF_BITMAP / CF_DIB
-            if (DateTime.UtcNow - lastImageOffer < TimeSpan.FromSeconds(8)) return;
+            if (DateTime.UtcNow - lastImageOffer < TimeSpan.FromSeconds(4)) return;
             var c = ClipboardService.Read();
             if (c.ImagePng == null || (c.Files != null && c.Files.Length > 0)) return;
             lastImageOffer = DateTime.UtcNow;
             bool shot = DateTime.UtcNow - snipSeenAt < TimeSpan.FromSeconds(20);
             var png = c.ImagePng;
-            string source = shot ? "Screenshot" : "Copied" + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
+            string source = (shot ? "Screenshot" : "Copied") + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
             var d = Current;
-            pet.Say((shot ? "Nice screenshot." : "Copied an image.") + " Keep it for " + Quote(d.title) + "?", 6500, () =>
+            Action add = () =>
             {
                 var target = Store.Exists(d.id) ? Store.Get(d.id) : Current;
                 var a = Store.AddImage(target, png, "image/png", shot ? Store.ScreenshotName() : "Copied image " + DateTime.Now.ToString("h:mm tt", CultureInfo.CurrentCulture), source, null);
                 Collected(target);
-                pet.Say(a == null ? "Already have that one." : "Got it · " + Plural(target.attachments.Count(x => x.kind == "image"), "image") + " in " + Quote(target.title), 2600);
-            }, "Click to add it");
+                if (a == null) { Notify("Already have that one."); return; }
+                panelActiveAt = DateTime.UtcNow; // you're collecting now, so the next few go in by themselves
+                AnnounceCapture(target, a);
+            };
+            string ask = (shot ? "Add this screenshot" : "Add this image") + " to " + Quote(d.title) + "?";
+            if (viaChip) pet.Say(ask, 7000, add, "Click to add it");
+            else win.Emit("offer", new Dictionary<string, object> { { "text", ask }, { "label", "Add it" }, { "id", offerSeq } });
+            pendingOffer = add;
+            pendingOfferId = offerSeq++;
+        }
+
+        Action pendingOffer;
+        int pendingOfferId, offerSeq = 1;
+
+        /// <summary>Something landed in the draft from outside the panel: say so in one line, with
+        /// one click to write a note about it and one to take it back.</summary>
+        void AnnounceCapture(Draft d, Attachment a)
+        {
+            int n = d.attachments.Where(x => x.include && x.kind == "image").ToList().IndexOf(a) + 1;
+            string what = a.kind == "image" ? (n > 0 ? "Image " + n : "Image") : "File";
+            string line = what + " added to " + Quote(d.title) + ".";
+            Action note = () => FocusNote(d.id, a.id);
+            Action undo = () =>
+            {
+                if (!Store.Exists(d.id)) return;
+                var cur = Store.Get(d.id);
+                Store.RemoveAttachment(cur, a.id);
+                PushDraft(cur);
+                Notify("Taken out. Your Screenshots folder still has it.");
+            };
+            if (PanelIsForeground())
+                win.Emit("captured", new Dictionary<string, object> { { "text", line }, { "attId", a.id }, { "draftId", d.id } });
+            else if (pet.IsShowing)
+                pet.Say(line, 6000, note, "Add a note", undo, "Undo");
+            else
+                toast.Show(line + " Click to add a note.", false, 4000, note);
+        }
+
+        void FocusNote(string draftId, string attId)
+        {
+            if (Store.Exists(draftId) && draftId != Settings.currentDraft)
+            {
+                Settings.currentDraft = draftId;
+                Settings.Save();
+                win.Emit("openDraft", DraftDto(Store.Get(draftId)));
+            }
+            ShowPanel();
+            win.Emit("focusNote", attId);
         }
 
         [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
@@ -677,7 +740,7 @@ namespace Chipmunk
         static readonly Dictionary<string, string> DictationHints = new Dictionary<string, string>
         {
             { "Wispr Flow", "hold Ctrl+Win" }, { "Superwhisper", "use your Superwhisper shortcut" }, { "Aqua", "use your Aqua shortcut" },
-            { "Willow", "hold your Willow key" }, { "Spokenly", "use your Spokenly shortcut" }, { "VoiceInk", "use your VoiceInk shortcut" },
+            { "Willow", "hold your Willow key" }, { "Spokenly", "use your Spokenly shortcut" }, { "VoiceInk", "use your VoiceInk shortcut" }, { "Granola", "use your Granola shortcut" },
         };
 
         Dictionary<string, object> DictationDto()
@@ -907,9 +970,9 @@ namespace Chipmunk
                 if (grab != null) { FinishGrab(); return; }
                 // Password managers and other private sources mark their clipboard entries; respect that.
                 if (ClipboardService.IsFromMonitorExcludedSource()) return;
-                // While the panel is open you're composing, so screenshots go straight in.
-                // With Collect on, they keep going in while it's hidden too.
-                bool auto = collect || win.Visible;
+                // While you're working in the panel, screenshots go straight in. With "Collect every
+                // screenshot" on, they go in wherever you are, until you send. Otherwise Chip asks.
+                bool auto = collect || Composing();
                 if (snip == null && !auto) { OfferImage(); return; }
                 var c = ClipboardService.Read();
                 if (snip != null)
@@ -919,21 +982,23 @@ namespace Chipmunk
                     EndSnip();
                     if (!Store.Exists(id)) return;
                     var d = Store.Get(id);
-                    var a = Store.AddImage(d, c.ImagePng, "image/png", Store.ScreenshotName(), "Snip", null);
+                    var a = Store.AddImage(d, c.ImagePng, "image/png", Store.ScreenshotName(), "Snip" + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : ""), null);
                     Collected(d);
-                    Notify(a == null ? "That screenshot is already in this draft." : "Screenshot added to " + Quote(d.title) + " · " + Plural(d.attachments.Count(x => x.kind == "image"), "image"));
+                    if (a == null) Notify("That screenshot is already in this draft.");
+                    else AnnounceCapture(d, a);
                     return;
                 }
                 if (auto)
                 {
                     var d = Current;
-                    string source = (collect ? "Collected" : "Screenshot") + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
+                    string source = "Screenshot" + (lastTarget != IntPtr.Zero ? " · " + FriendlyApp(lastTarget) : "");
                     if (c.ImagePng != null && (c.Files == null || c.Files.Length == 0))
                     {
                         var a = Store.AddImage(d, c.ImagePng, "image/png", Store.ScreenshotName(), source, null);
                         if (a == null) return;
+                        if (!collect) panelActiveAt = DateTime.UtcNow; // a run of screenshots keeps going in
                         Collected(d);
-                        Notify("Collected screenshot into " + Quote(d.title) + " · " + Plural(d.attachments.Count(x => x.kind == "image"), "image"));
+                        AnnounceCapture(d, a);
                     }
                     else if (collect && Settings.collectText && !string.IsNullOrWhiteSpace(c.Text) && (c.Files == null || c.Files.Length == 0))
                     {
@@ -950,6 +1015,7 @@ namespace Chipmunk
         void SetCollect(bool on)
         {
             collect = on;
+            pet.SetCollecting(on);
             UpdateTrayText();
             win.Emit("collect", on);
         }
@@ -1289,6 +1355,8 @@ namespace Chipmunk
             finally { pet.SetMode(0); }
             if (error != null) return error;
 
+            bool stopCollect = collect;
+            if (stopCollect) SetCollect(false);
             d.status = "sent";
             d.sends.Add(new SendRecord { at = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture), target = FriendlyApp(target), items = job.Images.Count + job.Files.Count });
             Store.Touch(d);
@@ -1297,7 +1365,7 @@ namespace Chipmunk
             if (job.Images.Count > 0) parts.Add(Plural(job.Images.Count, "image"));
             if (job.Files.Count > 0) parts.Add(Plural(job.Files.Count, "file"));
             if (!string.IsNullOrWhiteSpace(job.Text)) parts.Add(asPaths && atts.Any(a => a.kind == "image" || a.kind == "file") ? "your text with file paths" : "your text");
-            string sent = "Sent " + string.Join(" + ", parts) + " to " + FriendlyApp(target) + ".";
+            string sent = "Sent " + string.Join(" + ", parts) + " to " + FriendlyApp(target) + "." + (stopCollect ? " Stopped collecting screenshots." : "");
             if (pet.IsShowing) pet.Say(sent, 3000); else toast.Show(sent);
             return null;
         }
@@ -1313,7 +1381,7 @@ namespace Chipmunk
         {
             var x = new Dictionary<string, object>
             {
-                { "id", a.id }, { "kind", a.kind }, { "name", a.name }, { "source", a.source }, { "include", a.include },
+                { "id", a.id }, { "kind", a.kind }, { "name", a.name }, { "source", a.source }, { "include", a.include }, { "note", a.note },
                 { "w", a.w }, { "h", a.h }, { "bytes", a.bytes }, { "ext", a.ext }, { "text", a.text }, { "linked", a.linkPath != null },
                 { "url", a.kind == "link" || a.kind == "text" ? a.url : (a.file != null ? FileUrl(d, a) : null) },
             };
@@ -1447,6 +1515,7 @@ namespace Chipmunk
                     var patch = Json.Obj(a["patch"]);
                     if (att != null && Json.Has(patch, "include")) att.include = Json.Bool(patch, "include");
                     if (att != null && Json.Has(patch, "name")) att.name = Json.Str(patch, "name");
+                    if (att != null && Json.Has(patch, "note")) att.note = string.IsNullOrWhiteSpace(Json.Str(patch, "note")) ? null : Json.Str(patch, "note").Trim();
                     Store.SaveMeta(d);
                     return DraftDto(d);
                 }
@@ -1534,6 +1603,14 @@ namespace Chipmunk
                     return DraftDto(d, true);
                 case "setSettings": return ApplySettings(Json.Obj(a["patch"]));
                 case "setCollect": SetCollect(Json.Bool(a, "on")); return true;
+                case "acceptOffer":
+                {
+                    var act = pendingOffer;
+                    if (act == null || Json.Int(a, "offerId") != pendingOfferId) return false;
+                    pendingOffer = null;
+                    act();
+                    return true;
+                }
                 case "send": return Send(d, Json.Str(a, "how"), Json.Str(a, "hwnd"));
                 case "agentInfo": return AgentInfo();
                 case "browserInfo": return BrowserInfo();

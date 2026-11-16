@@ -115,6 +115,20 @@ const el = {
 
 const hk = (name) => (S.settings.hotkeys || {})[name] || '';
 
+// The same panel runs on Windows (WebView2) and Mac (WKWebView). Only key names, a few words
+// and the features each side has differ.
+const isMac = () => S.settings.platform === 'mac';
+const K = {
+  shot: () => isMac() ? '⌘⇧4' : 'Win+Shift+S',
+  send: () => isMac() ? '⌘↩' : 'Ctrl+Enter',
+  paste: () => isMac() ? '⌘V' : 'Ctrl+V',
+  pasteAdd: () => isMac() ? '⌘⇧V' : 'Ctrl+Shift+V',
+  dictate: () => isMac() ? 'Fn Fn' : 'Win+H',
+  dictateName: () => isMac() ? 'Mac dictation' : 'Windows voice typing',
+  os: () => isMac() ? 'Mac' : 'Windows',
+};
+const has = (feature) => !S.settings.features || S.settings.features[feature] !== false;
+
 // ---------- saving ----------
 let textTimer = null;
 let titleTimer = null;
@@ -155,6 +169,7 @@ async function saveTitle() {
 async function flushSaves() {
   if (textTimer) await saveText();
   if (titleTimer) await saveTitle();
+  await flushNotes();
 }
 
 // Apply a draft object coming back from the host. Local text wins while the
@@ -166,6 +181,7 @@ function applyDraft(d, opts = {}) {
   const text = S.d.text;
   const title = S.d.title;
   S.d = d;
+  for (const a of S.d.attachments || []) if (pendingNotes.has(a.id)) a.note = pendingNotes.get(a.id);
   if (keepText) { S.d.text = text; S.d.title = title; }
   else {
     el.editor.value = d.text || '';
@@ -223,10 +239,10 @@ function renderDictation() {
   const d = S.settings.dictation || {};
   el.dictation.replaceChildren(...[icon('mic'),
     h('span', {}, d.app ? `${d.app}: ${d.hint}` : 'Dictate'),
-    d.app ? null : h('kbd', {}, d.hint || 'Win+H')].filter(Boolean));
+    d.app ? null : h('kbd', {}, d.hint || K.dictate())].filter(Boolean));
   el.dictation.title = d.app
     ? `${d.app} is running. Click here, then ${d.hint} and talk: your words land in the draft.`
-    : 'Click here, then press Win+H to talk. Wispr Flow, Superwhisper and Aqua work here too.';
+    : `Click here, then press ${K.dictate()} to talk. Wispr Flow, Superwhisper and Granola work here too.`;
 }
 
 function renderWordCount() {
@@ -397,36 +413,109 @@ function renderAttachments() {
     h('div', { class: 'section-title' }, 'Collected', atts.length ? h('span', { class: 'count-pill' }, atts.length) : null),
     chipBtn('scissors', 'Snip', () => snip(), `Snip part of your screen into this draft (${hk('snip')})`),
     chipBtn('paperclip', 'Files', () => pickFiles(), 'Choose files to add'),
-    chipBtn('clipboard', 'Paste', () => addFromClipboard(), 'Add whatever you copied (Ctrl+Shift+V)'),
-    chipBtn('clock', 'Past chats', () => openHistory(), 'Reuse prompts, replies and images from earlier chats')));
+    chipBtn('clipboard', 'Paste', () => addFromClipboard(), `Add whatever you copied (${K.pasteAdd()})`),
+    has('history') ? chipBtn('clock', 'Past chats', () => openHistory(), 'Reuse prompts, replies and images from earlier chats') : null));
 
   if (!atts.length) {
     sec.append(h('div', { class: 'empty' },
       h('img', { src: 'assets/chip.png', alt: '' }),
       h('div', {},
         h('div', { class: 'e-title' }, 'Screenshots land here by themselves'),
-        h('div', { class: 'e-body' }, 'While this panel is open, every screenshot you take goes into the draft. Drop or paste files, text and links too.'),
+        h('div', { class: 'e-body' }, 'Take them while you work on this draft and they come straight in, numbered, so you can say “in image 2…”. Your Screenshots folder still keeps its copy.'),
         h('div', { class: 'keys' },
-          h('kbd', {}, 'Win+Shift+S'), h('span', {}, 'Take a screenshot, as usual'),
+          h('kbd', {}, K.shot()), h('span', {}, 'Take a screenshot, as usual'),
           h('kbd', {}, hk('grab')), h('span', {}, 'Grab text you highlighted in any app'),
-          h('kbd', {}, 'Ctrl+V'), h('span', {}, 'Paste files, images or links here')))));
+          h('kbd', {}, K.paste()), h('span', {}, 'Paste files, images or links here')))));
     return;
   }
 
+  // Remember a note being typed, so a screenshot arriving mid-sentence doesn't steal the cursor.
+  const focused = document.activeElement && document.activeElement.classList.contains('att-note') ? document.activeElement : null;
+  const keep = focused ? { id: focused.dataset.att, start: focused.selectionStart, end: focused.selectionEnd } : null;
   const grid = h('div', { class: 'att-grid' });
+  let n = 0;
   atts.forEach((a) => {
-    const tile = attTile(a);
+    const num = a.kind === 'image' && a.include && a.url ? ++n : null;
+    const tile = attTile(a, num);
     if (!S.seenAtt.has(a.id)) { tile.classList.add('fresh'); S.seenAtt.add(a.id); }
     grid.append(tile);
   });
   sec.append(grid);
+  if (keep) {
+    const again = grid.querySelector(`.att-note[data-att="${keep.id}"]`);
+    if (again) { again.focus(); again.setSelectionRange(keep.start, keep.end); }
+  }
+}
+
+// A note tells the AI what to look at in one screenshot. It's sent as "Image 2: ..." right
+// with the images, the way Anthropic's vision guide suggests labeling several images.
+const noteTimers = new Map();
+const pendingNotes = new Map(); // typed but not yet confirmed saved: wins over anything the app sends back
+function noteField(a) {
+  const ta = h('textarea', {
+    class: 'att-note', rows: '1', 'data-att': a.id, spellcheck: 'true',
+    placeholder: a.kind === 'image' ? 'Add a note for the AI' : 'Add a note about this file',
+    'aria-label': `Note for ${a.name}`,
+  });
+  ta.value = pendingNotes.has(a.id) ? pendingNotes.get(a.id) : (a.note || '');
+  const fit = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 132) + 'px'; };
+  requestAnimationFrame(fit);
+  ta.addEventListener('input', () => {
+    fit();
+    const att = attById(a.id);
+    if (att) att.note = ta.value;
+    pendingNotes.set(a.id, ta.value);
+    setSave('saving');
+    clearTimeout(noteTimers.get(a.id));
+    noteTimers.set(a.id, setTimeout(() => saveNote(a.id), 450));
+  });
+  ta.addEventListener('keydown', (e) => {
+    e.stopPropagation(); // Delete and Enter belong to the note, not the tile
+    if ((e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) || e.key === 'Escape') { e.preventDefault(); ta.blur(); }
+  });
+  ta.addEventListener('mousedown', (e) => e.stopPropagation());
+  ta.addEventListener('focus', () => { const t = ta.closest('.att'); if (t) t.draggable = false; });
+  ta.addEventListener('blur', () => {
+    const t = ta.closest('.att'); if (t) t.draggable = true;
+    if (noteTimers.has(a.id)) saveNote(a.id);
+  });
+  return ta;
+}
+
+async function saveNote(attId) {
+  clearTimeout(noteTimers.get(attId));
+  noteTimers.delete(attId);
+  const att = attById(attId);
+  if (!att || !S.d) return;
+  const id = S.d.id;
+  const note = pendingNotes.has(attId) ? pendingNotes.get(attId) : (att.note || '');
+  try {
+    await Host.call('updateAttachment', { id, attId, patch: { note } });
+    if (pendingNotes.get(attId) === note) pendingNotes.delete(attId);
+    setSave('saved');
+  } catch (e) { setSave('error', e.message); }
+}
+
+async function flushNotes() {
+  for (const id of [...noteTimers.keys()]) await saveNote(id);
+}
+
+function focusNote(attId) {
+  closeOverlay();
+  const ta = el.atts.querySelector(`.att-note[data-att="${attId}"]`);
+  if (!ta) return;
+  ta.scrollIntoView({ block: 'center' });
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+  const tile = ta.closest('.att');
+  if (tile) { tile.classList.remove('flash'); void tile.offsetWidth; tile.classList.add('flash'); }
 }
 
 function linkedItemFor(attId) {
   return checklist().find(i => i.attId === attId);
 }
 
-function attTile(a) {
+function attTile(a, num) {
   const linked = linkedItemFor(a.id);
   const tile = h('div', {
     class: 'att' + (a.include ? '' : ' excluded') + (a.kind === 'text' ? ' wide' : '') + (a.kind === 'image' && a.url ? ' has-thumb' : ''),
@@ -452,7 +541,7 @@ function attTile(a) {
       e.stopPropagation();
       reorder(S.dragAttId, a.id);
     },
-    onclick: (e) => { if (!e.target.closest('.att-tools')) openAttachment(a); },
+    onclick: (e) => { if (!e.target.closest('.att-tools, .att-note')) openAttachment(a); },
     onkeydown: (e) => {
       if (e.key === 'Enter') openAttachment(a);
       if (e.key === 'Delete') removeAttachment(a);
@@ -460,16 +549,21 @@ function attTile(a) {
   });
 
   if (a.kind === 'image' && a.url) {
-    tile.append(h('div', { class: 'thumb' }, h('img', { src: a.url, alt: a.name, loading: 'lazy', draggable: 'false' })));
+    const where = (a.source || '').replace(/^(Screenshot|Snip|Collected|Copied) · /, '');
+    tile.append(h('div', { class: 'thumb' },
+      h('img', { src: a.url, alt: a.name, loading: 'lazy', draggable: 'false' }),
+      num ? h('span', { class: 'num', title: `Sent as image ${num}. Say “image ${num}” in your prompt to point at it.` }, num) : null));
     tile.append(h('div', { class: 'att-body' },
-      h('div', { class: 'att-name' }, a.name),
-      h('div', { class: 'att-sub' }, [a.source, a.w ? `${a.w}×${a.h}` : null].filter(Boolean).join(' · '))));
+      noteField(a),
+      h('div', { class: 'att-sub', title: [a.name, a.source, a.w ? `${a.w}×${a.h}` : null].filter(Boolean).join(' · ') },
+        [a.name.replace(/^Screenshot /, ''), where].filter(Boolean).join(' · '))));
   } else if (a.kind === 'file' || a.kind === 'image') {
     tile.append(h('div', { class: 'att-body' },
       h('div', { class: 'kind-badge' }, icon(a.kind === 'image' ? 'image' : 'file'), h('span', {}, (a.ext || 'file').toUpperCase())),
       h('div', { class: 'att-name wrap', style: { marginTop: '6px' }, title: a.name }, a.name.replace(/([-_.])/g, '$1​')),
       h('div', { class: 'att-sub' + (a.missing ? ' warn-tag' : '') },
-        a.missing ? 'File was moved or deleted' : [fmtBytes(a.bytes), a.linked ? 'linked, not copied' : a.source].filter(Boolean).join(' · '))));
+        a.missing ? 'File was moved or deleted' : [fmtBytes(a.bytes), a.linked ? 'linked, not copied' : a.source].filter(Boolean).join(' · ')),
+      noteField(a)));
   } else if (a.kind === 'text') {
     tile.append(h('div', { class: 'att-body' },
       h('div', { class: 'kind-badge' }, icon('quote'), h('span', {}, a.source || 'Quote')),
@@ -517,7 +611,7 @@ async function toggleInclude(a) {
 async function removeAttachment(a) {
   try {
     applyDraft(await Host.call('removeAttachment', { id: S.d.id, attId: a.id }));
-    toast(`Removed ${a.kind === 'image' ? 'screenshot' : a.kind === 'text' ? 'quote' : a.kind}`, null, {
+    toast(`Removed ${a.kind === 'image' ? 'the image' : a.kind === 'text' ? 'the quote' : 'the ' + a.kind}`, null, {
       label: 'Undo',
       run: async () => applyDraft(await Host.call('restoreAttachment', { id: S.d.id, attId: a.id })),
     });
@@ -600,10 +694,10 @@ function renderFooter() {
   el.send.replaceChildren(icon(t && t.terminal ? 'terminal' : 'send'),
     h('span', { class: 'label' },
       h('span', { class: 'l1' }, t ? `Send to ${t.label || t.app}` : 'Send to…'),
-      h('span', { class: 'l2' }, t ? targetSub(t, 'Ctrl+Enter') : 'Open ChatGPT, Claude or any app')));
+      h('span', { class: 'l2' }, t ? targetSub(t, K.send()) : 'Open ChatGPT, Claude or any app')));
   el.send.disabled = !hasContent;
   el.sendMore.disabled = !hasContent;
-  el.send.title = t ? `Switch to "${t.title}" and paste everything (Ctrl+Enter)` : 'Pick where to send';
+  el.send.title = t ? `Switch to "${t.title}" and paste everything (${K.send()})` : 'Pick where to send';
 }
 
 // ---------- updates ----------
@@ -699,9 +793,12 @@ function showOverlay(type, nodes, extra = {}) {
 // ----- welcome -----
 function openWelcome() {
   const startup = h('input', { type: 'checkbox', checked: true });
+  const chip = h('input', { type: 'checkbox', checked: S.settings.showPet !== false });
   const finish = async (thenSettings) => {
     try {
-      S.settings = await Host.call('setSettings', { patch: { onboarded: true, startWithWindows: startup.checked } });
+      const patch = { onboarded: true, startWithWindows: startup.checked };
+      if (has('pet')) patch.showPet = chip.checked;
+      S.settings = await Host.call('setSettings', { patch });
     } catch (e) { toast(e.message, 'error'); }
     closeOverlay();
     if (thenSettings) openSettings('browser');
@@ -709,14 +806,18 @@ function openWelcome() {
   };
   const step = (n, title, body) => h('div', { class: 'w-step' }, h('div', { class: 'w-num' }, n), h('div', {}, h('b', {}, title), h('span', {}, body)));
   const modal = h('div', { class: 'modal welcome', role: 'dialog', 'aria-label': 'Welcome to Chipmunk' },
-    h('div', { class: 'w-hero' }, h('img', { src: 'assets/chip.png', alt: '' }), h('h3', {}, 'Meet Chip.')),
+    h('div', { class: 'w-hero' }, h('img', { src: 'assets/chip.png', alt: '' }), h('h3', {}, 'Show your AI everything.')),
     h('div', { class: 'w-body' },
-      h('p', { class: 'w-lede' }, 'A safe place to build a prompt with all its screenshots and files, then hand the whole thing to any AI at once.'),
-      step(1, 'Open it', h('span', {}, 'Press ', h('kbd', {}, hk('toggle')), ' from anywhere, or click Chip.')),
-      step(2, 'Throw things in', h('span', {}, 'Screenshots you take land here by themselves. Paste or drop files, and type or dictate your prompt.')),
-      step(3, 'Send', 'Pick ChatGPT, Claude, Codex, Antigravity or any app. Everything goes in, in one go.'),
+      h('p', { class: 'w-lede' }, 'Collect screenshots, files and notes in one draft, then paste all of it into ChatGPT, Claude, Claude Code, Codex or Cursor in one go.'),
+      step(1, 'Screenshot as usual', h('span', {}, 'While you work on a draft, every ', h('kbd', {}, K.shot()), ' lands here, numbered. Your own screenshots folder keeps its copy.')),
+      step(2, 'Say what matters', 'Type or dictate your prompt. Add a note to any screenshot, or just say “in image 2…”.'),
+      step(3, 'Send', h('span', {}, 'Press ', h('kbd', {}, K.send()), ' and it all goes into your AI app, in order. ', h('kbd', {}, hk('toggle')), ' opens this from anywhere.')),
+      h('div', { class: 'w-options' },
+        !has('pet') ? null : h('label', { class: 'switch-label' }, chip, h('span', { class: 'switch' }),
+          h('span', {}, h('b', {}, 'Show Chip'), h('span', { class: 'muted' }, ' — a small chipmunk in the corner. Click it to open your draft, drop files on it. It never shows up in your screenshots.'))),
+        h('label', { class: 'switch-label' }, startup, h('span', { class: 'switch' }), h('span', {}, h('b', {}, isMac() ? 'Open at login' : 'Start with Windows')))),
       h('div', { class: 'w-foot' },
-        h('label', { class: 'switch-label' }, startup, h('span', { class: 'switch' }), 'Start with Windows'),
+        h('span', {}),
         h('button', { class: 'btn primary', style: { flex: 'none' }, onclick: () => finish(false) }, 'Get started'))));
   showOverlay('welcome', [h('div', { class: 'modal-wrap' }, modal)]);
 }
@@ -744,7 +845,7 @@ async function openDrafts() {
     h('div', { class: 'search' }, icon('search'), search),
     body,
     h('div', { class: 'panel-foot' },
-      h('button', { class: 'btn', style: { flex: 1 }, onclick: () => openHistory() }, icon('clock'), 'Past chats'),
+      has('history') ? h('button', { class: 'btn', style: { flex: 1 }, onclick: () => openHistory() }, icon('clock'), 'Past chats') : h('span', { style: { flex: 1 } }),
       h('button', { class: 'btn', title: 'Open the drafts folder', 'aria-label': 'Open drafts folder', onclick: () => Host.call('openDataFolder') }, icon('folder'))));
   showOverlay('drafts', [h('div', { class: 'scrim', onclick: closeOverlay }), drawer]);
   $('#btn-drafts').classList.add('active');
@@ -857,7 +958,7 @@ function openMenu(anchor) {
     }),
     item('target', 'Add a reminder of what to attach', () => { S.showChecklist = true; renderChecklist(); const i = el.checklist.querySelector('.add-check input'); if (i) i.focus(); }),
     item('clock', 'Version history', () => openVersions()),
-    item('inbox', 'Past chats', () => openHistory()),
+    has('history') ? item('inbox', 'Past chats', () => openHistory()) : null,
     item('folder', 'Show in folder', () => Host.call('revealDraft', { id: S.d.id })),
     item(S.d.status === 'sent' ? 'restore' : 'check', S.d.status === 'sent' ? 'Mark as in progress' : 'Mark as sent', async () => {
       applyDraft(await Host.call('updateDraft', { id: S.d.id, patch: { status: S.d.status === 'sent' ? 'draft' : 'sent' } }));
@@ -892,7 +993,7 @@ function openLightbox(attId) {
     img.src = a.url;
     img.alt = a.name;
     title.textContent = a.name;
-    sub.textContent = [`${i + 1} of ${images.length}`, a.source, a.w ? `${a.w}×${a.h}` : null, fmtBytes(a.bytes)].filter(Boolean).join(' · ');
+    sub.textContent = [`Image ${i + 1} of ${images.length}`, a.note ? `Note: ${a.note}` : a.source, a.w ? `${a.w}×${a.h}` : null].filter(Boolean).join(' · ');
   };
   const step = (n) => { i = (i + n + images.length) % images.length; show(); };
   const box = h('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Image preview' },
@@ -1273,14 +1374,14 @@ async function openSettings(focus) {
       e.preventDefault();
       if (e.key === 'Escape') { input.blur(); return; }
       if (['Control', 'Alt', 'Shift', 'Meta', 'OS'].includes(e.key)) return;
-      const mods = [e.ctrlKey && 'Ctrl', e.metaKey && 'Win', e.shiftKey && 'Shift', e.altKey && 'Alt'].filter(Boolean);
+      const mods = [e.ctrlKey && 'Ctrl', e.metaKey && (isMac() ? 'Cmd' : 'Win'), e.shiftKey && 'Shift', e.altKey && (isMac() ? 'Option' : 'Alt')].filter(Boolean);
       if (!mods.length || (mods.length === 1 && mods[0] === 'Shift')) {
-        input.value = 'Add Win, Ctrl or Alt';
+        input.value = isMac() ? 'Add Cmd, Ctrl or Option' : 'Add Win, Ctrl or Alt';
         return;
       }
       const key = keyName(e);
       if (!key) return;
-      const order = ['Ctrl', 'Win', 'Shift', 'Alt'];
+      const order = ['Ctrl', 'Cmd', 'Win', 'Option', 'Shift', 'Alt'];
       const combo = [...order.filter(m => mods.includes(m)), key].join('+');
       delete errors[name];
       input.blur();
@@ -1306,12 +1407,12 @@ async function openSettings(focus) {
           h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, app ? `${app} works here` : 'Use the dictation app you already have'),
             h('div', { class: 'sr-sub' }, app
               ? `Click in your prompt and ${(st.dictation || {}).hint || 'use its shortcut'}. ${app} types straight into the draft.`
-              : 'Wispr Flow, Superwhisper, Aqua and Windows voice typing (Win+H) all type straight into your draft. Click in the prompt and talk.')),
-          app ? h('span', { class: 'status-pill ok' }, icon('check'), 'Detected') : h('span', { class: 'status-pill idle' }, 'Win+H'))),
+              : `Wispr Flow, Superwhisper, Granola and ${K.dictateName()} (${K.dictate()}) all type straight into your draft. Click in the prompt and talk.`)),
+          app ? h('span', { class: 'status-pill ok' }, icon('check'), 'Detected') : h('span', { class: 'status-pill idle' }, K.dictate()))),
 
-      group('smile', 'Chip',
-        toggleRow('showPet', 'Show Chip on your desktop', 'Click Chip to send your draft to any open AI app. Drop files, images, links or text on it to collect them. Hides during fullscreen apps.'),
-        st.showPet ? toggleRow('petHints', 'Chip suggestions', 'Chip offers to paste your draft when you switch to an AI app, and to keep screenshots you take. One click, or ignore it.') : null),
+      !has('pet') ? null : group('smile', 'Chip',
+        toggleRow('showPet', 'Show Chip on your desktop', 'Click Chip to open your draft, right-click it to send anywhere. Drop files, images, links or text on it. Its badge counts what you collected. It never appears in screenshots and hides during fullscreen apps.'),
+        st.showPet ? toggleRow('petHints', 'Chip suggestions', 'Chip offers to paste your draft when you switch to an AI app, and asks before keeping a screenshot you took elsewhere. One click, or ignore it.') : null),
 
       group('send', 'Sending',
         toggleRow('shrinkImages', 'Shrink huge screenshots', 'AI apps scale big images down anyway. This makes uploads faster.'),
@@ -1320,11 +1421,11 @@ async function openSettings(focus) {
         selectRow('Paste speed', 'Pause between each pasted item', st.pasteDelayMs, [[250, 'Fast'], [450, 'Normal'], [900, 'Slow, for laggy apps']], v => save({ pasteDelayMs: Number(v) }))),
 
       group('sliders', 'General',
-        toggleRow('startWithWindows', 'Start with Windows', 'Runs quietly in the tray so your shortcuts always work.'),
+        toggleRow('startWithWindows', isMac() ? 'Open at login' : 'Start with Windows', isMac() ? 'Runs quietly in the menu bar so your shortcuts always work.' : 'Runs quietly in the tray so your shortcuts always work.'),
         toggleRow('autoUpdate', 'Keep Chipmunk up to date', 'Checks GitHub for a new version about once a day. That check is the only thing Chipmunk sends over the internet.'),
         h('div', { class: 'setting-row' },
           h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, `Chipmunk ${st.version || ''}`),
-            h('div', { class: 'sr-sub' }, S.update ? `Version ${S.update.version} is available.` : (st.installed ? 'Installed for your Windows account.' : 'Running from a folder, not installed.'))),
+            h('div', { class: 'sr-sub' }, S.update ? `Version ${S.update.version} is available.` : (isMac() ? 'For Mac.' : st.installed ? 'Installed for your Windows account.' : 'Running from a folder, not installed.'))),
           S.update
             ? h('button', { class: 'btn accent', onclick: applyUpdate }, icon('download'), S.update.canInstall ? 'Update now' : 'Get it')
             : h('button', { class: 'btn', onclick: async (e) => {
@@ -1337,17 +1438,17 @@ async function openSettings(focus) {
                 b.disabled = false;
               } }, 'Check for updates')),
         toggleRow('alwaysOnTop', 'Keep the panel on top'),
-        toggleRow('collectText', 'Background collecting also keeps copied text', 'Off: only screenshots are collected while the panel is hidden.'),
-        selectRow('Theme', null, st.theme || 'system', [['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']], v => save({ theme: v })),
+        toggleRow('collectText', '“Collect every screenshot” also keeps copied text', 'Off: it only collects screenshots. Either way it stops by itself when you send.'),
+        selectRow('Theme', null, st.theme || 'system', [['system', `Match ${K.os()}`], ['light', 'Light'], ['dark', 'Dark']], v => save({ theme: v })),
         h('div', { class: 'setting-row' },
           h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Drafts folder'),
             h('div', { class: 'path-box' }, st.dataDir || ''),
             storage ? h('div', { class: 'sr-sub' }, `${fmtBytes(storage.bytes)} in ${plural(storage.drafts, 'draft')}. Files over 25 MB are linked, not copied${storage.linked ? ` (${storage.linked} linked)` : ''}.`) : null),
           h('button', { class: 'btn', onclick: () => Host.call('openDataFolder') }, icon('folder'), 'Open'))),
 
-      h('details', { class: 'extras', open: S.extrasOpen || null, ontoggle: (e) => { S.extrasOpen = e.currentTarget.open; } },
+      !(has('extension') || has('agents')) ? null : h('details', { class: 'extras', open: S.extrasOpen || null, ontoggle: (e) => { S.extrasOpen = e.currentTarget.open; } },
         h('summary', {}, icon('chevronRight'), 'Extras', h('span', { class: 'muted' }, 'Coding agents, browser extension')),
-      group('globe', 'Browser extension (optional)',
+      !has('extension') ? null : group('globe', 'Browser extension (optional)',
         h('div', { class: 'setting-row col' },
           h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' } },
             h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Right-click to add from websites'),
@@ -1362,7 +1463,7 @@ async function openSettings(focus) {
             h('button', { class: 'btn', onclick: () => Host.call('openExtensionFolder') }, icon('folder'), 'Open extension folder'),
             h('button', { class: 'btn ghost', onclick: async () => { await Host.call('copyToClipboard', { text: 'chrome://extensions' }); toast('Copied chrome://extensions. Paste it into your address bar.'); } }, icon('copy'), 'Copy chrome://extensions')))),
 
-      group('cpu', 'AI agents',
+      !has('agents') ? null : group('cpu', 'AI agents',
         h('div', { class: 'setting-row col' },
           h('div', { class: 'sr-text' }, h('div', { class: 'sr-title' }, 'Let coding agents read your draft'),
             h('div', { class: 'sr-sub' }, 'Connect once, then just say "use my Chipmunk draft". The agent gets your text, screenshots and files directly, with no pasting.')),
@@ -1430,13 +1531,13 @@ function confirmModal({ title, body, ok, cancel }) {
   });
 }
 
-function toast(text, kind, action) {
+function toast(text, kind, action, ms) {
   if (!text) return;
   const t = h('div', { class: 'toast' + (kind === 'error' ? ' error' : '') }, h('span', { class: 't-text' }, text));
   if (action) t.append(h('button', { onclick: () => { t.remove(); action.run(); } }, action.label));
   el.toasts.append(t);
   while (el.toasts.children.length > 3) el.toasts.firstChild.remove();
-  setTimeout(() => t.remove(), action ? 6000 : 3400);
+  setTimeout(() => t.remove(), ms || (action ? 6000 : 3400));
 }
 
 // ---------- drag and drop from outside ----------
@@ -1519,7 +1620,7 @@ document.addEventListener('keydown', (e) => {
   else if (k === 'n' && !e.shiftKey) { e.preventDefault(); closeOverlay(); newDraft(); }
   else if (k === 'k') { e.preventDefault(); openDrafts(); }
   else if (k === ',') { e.preventDefault(); openSettings(); }
-  else if (k === 'h' && e.shiftKey) { e.preventDefault(); openHistory(); }
+  else if (k === 'h' && e.shiftKey && has('history')) { e.preventDefault(); openHistory(); }
   else if (k === 'v' && e.shiftKey) { e.preventDefault(); addFromClipboard(); }
   else if (k === 's') { e.preventDefault(); flushSaves().then(() => toast('Saved. It already was, by the way.')); }
 });
@@ -1561,7 +1662,7 @@ function bind() {
     renderCollect();
     try {
       await Host.call('setCollect', { on: S.collect });
-      toast(S.collect ? 'Screenshots keep landing in this draft, even with the panel hidden' : 'Screenshots go in only while the panel is open');
+      toast(S.collect ? 'Every screenshot you take now lands here, from any app, until you send. Chip shows a dot while it’s on.' : 'Back to normal: only screenshots you take while working here come in.');
     } catch (e) { toast(e.message, 'error'); }
   });
 
@@ -1584,6 +1685,10 @@ function bind() {
     });
   });
   Host.on('toast', (t) => toast(t.text, t.kind));
+  // A screenshot taken in another app while the panel sat open: ask, don't assume.
+  Host.on('offer', (o) => toast(o.text, null, { label: o.label || 'Add it', run: () => Host.call('acceptOffer', { offerId: o.id }) }, 8000));
+  Host.on('captured', (c) => toast(c.text, null, { label: 'Add a note', run: () => focusNote(c.attId) }));
+  Host.on('focusNote', (attId) => requestAnimationFrame(() => focusNote(attId)));
   Host.on('collect', (on) => { S.collect = on; renderCollect(); });
   Host.on('historyChanged', () => { if (S.overlay && S.overlay.type === 'history' && S.overlay.refresh) S.overlay.refresh(); });
   Host.on('target', (t) => { S.target = t; renderFooter(); });

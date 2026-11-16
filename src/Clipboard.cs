@@ -181,16 +181,48 @@ namespace Chipmunk
         }
     }
 
-    /// <summary>Builds the text that gets pasted: the prompt, then quotes, links and (for Claude Code) file paths.</summary>
+    /// <summary>Builds the text that gets pasted: the prompt, notes about each screenshot, then quotes,
+    /// links and (for Claude Code) file paths.</summary>
     static class Composer
     {
+        /// <summary>Images are pasted first, in draft order, so the AI app numbers them Image 1, 2, 3
+        /// (Claude Code shows [Image #1]). Notes are labeled with the same numbers, which is how
+        /// Anthropic's vision guide recommends pointing a model at one image among several.</summary>
         public static string Build(string prompt, IEnumerable<Attachment> atts, Func<Attachment, string> pathOf, bool withPaths)
         {
             var list = atts.Where(a => a.include).ToList();
             var sb = new StringBuilder((prompt ?? "").TrimEnd());
             var quotes = list.Where(a => a.kind == "text").ToList();
             var links = list.Where(a => a.kind == "link").ToList();
-            var files = withPaths ? list.Where(a => a.kind == "image" || a.kind == "file").ToList() : new List<Attachment>();
+            var images = list.Where(a => a.kind == "image" && File.Exists(pathOf(a) ?? "")).ToList();
+            var docs = list.Where(a => a.kind == "file" && File.Exists(pathOf(a) ?? "")).ToList();
+
+            if (withPaths)
+            {
+                // Claude Code reads @"path" references itself; the note goes right next to each one.
+                if (images.Count + docs.Count > 0)
+                {
+                    sb.Append("\n\n## Attached files\n");
+                    int n = 0;
+                    foreach (var f in images.Concat(docs))
+                    {
+                        string label = f.kind == "image" ? "Image " + (++n) : f.name;
+                        sb.Append(label).Append(": @\"").Append(pathOf(f)).Append('"');
+                        if (!string.IsNullOrWhiteSpace(f.note)) sb.Append(" (").Append(OneLine(f.note)).Append(')');
+                        sb.Append('\n');
+                    }
+                }
+            }
+            else if (images.Concat(docs).Any(a => !string.IsNullOrWhiteSpace(a.note)))
+            {
+                sb.Append("\n\n## About the attachments\n");
+                for (int i = 0; i < images.Count; i++)
+                    if (!string.IsNullOrWhiteSpace(images[i].note))
+                        sb.Append("Image ").Append(i + 1).Append(": ").Append(OneLine(images[i].note)).Append('\n');
+                foreach (var f in docs)
+                    if (!string.IsNullOrWhiteSpace(f.note))
+                        sb.Append(f.name).Append(": ").Append(OneLine(f.note)).Append('\n');
+            }
 
             if (quotes.Count > 0)
             {
@@ -202,8 +234,6 @@ namespace Chipmunk
                     sb.Append(":\n\"\"\"\n").Append(q.text.Trim()).Append("\n\"\"\"\n");
                 }
                 sb.Length -= 1; // no blank line left dangling after the last quote
-                {
-                }
             }
             if (links.Count > 0)
             {
@@ -214,12 +244,12 @@ namespace Chipmunk
                     sb.Append("- ").Append(named ? l.name + ": " : "").Append(l.url).Append('\n');
                 }
             }
-            if (files.Count > 0)
-            {
-                sb.Append("\n\n## Attached files\n");
-                foreach (var f in files) sb.Append("@\"").Append(pathOf(f)).Append("\"\n");
-            }
             return sb.ToString().Trim();
+        }
+
+        static string OneLine(string s)
+        {
+            return System.Text.RegularExpressions.Regex.Replace(s.Trim(), @"\s*\r?\n\s*", " ");
         }
     }
 

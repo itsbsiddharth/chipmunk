@@ -1,6 +1,7 @@
-// Bridge to the native Chipmunk host (WebView2). When the page runs in a normal
+// Bridge to the native Chipmunk host (WebView2 on Windows, WKWebView on Mac). When the page runs in a normal
 // browser (UI development), an in-memory mock host stands in for it.
-const webview = window.chrome && window.chrome.webview;
+// On Mac the WKWebView host injects window.chipmunkMac with the same postMessage shape.
+const webview = (window.chrome && window.chrome.webview) || window.chipmunkMac;
 const listeners = new Map();
 const pending = new Map();
 let seq = 0;

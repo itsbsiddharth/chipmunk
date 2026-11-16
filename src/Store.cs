@@ -27,6 +27,7 @@ namespace Chipmunk
         public string text;      // quote text
         public string url;       // link target, or the page a quote came from
         public string source;    // where it came from, e.g. "Snip · Chrome"
+        public string note;      // what the user wants the AI to notice in this item
         public string ext;
         public string added;
         public string hash;

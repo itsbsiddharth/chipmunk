@@ -186,6 +186,15 @@ namespace Chipmunk
             return false;
         }
 
+        [DllImport("user32.dll")] static extern bool SetWindowDisplayAffinity(IntPtr h, uint affinity);
+
+        /// <summary>Keeps a window out of screenshots and screen recordings (Windows 10 2004 and later),
+        /// so Chip and its bubbles never end up in what you capture.</summary>
+        public static void HideFromCapture(IntPtr h)
+        {
+            try { SetWindowDisplayAffinity(h, 0x11 /* WDA_EXCLUDEFROMCAPTURE */); } catch { }
+        }
+
         public static void SetDarkTitleBar(IntPtr h, bool dark)
         {
             try

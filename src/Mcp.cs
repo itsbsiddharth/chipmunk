@@ -169,14 +169,22 @@ namespace Chipmunk
 
             var text = new StringBuilder();
             text.Append("# ").Append(string.IsNullOrWhiteSpace(draft.title) ? "Chipmunk draft" : draft.title).Append("\n\n");
-            string body = Composer.Build(store.ReadText(draft), atts, a => store.FilePath(draft, a), false);
+            // Images and files are listed below with their notes, so only quotes and links go through the composer.
+            string body = Composer.Build(store.ReadText(draft), atts.Where(a => a.kind == "text" || a.kind == "link"), a => store.FilePath(draft, a), false);
             text.Append(body.Length > 0 ? body : "(The draft has no text yet.)");
             var files = atts.Where(a => a.kind == "image" || a.kind == "file").ToList();
             if (files.Count > 0)
             {
                 text.Append("\n\n## Attached files\n");
+                int n = 0;
                 foreach (var f in files)
-                    text.Append("- ").Append(store.FilePath(draft, f)).Append(f.kind == "image" ? (withImages ? " (screenshot, shown below)" : " (image)") : "").Append('\n');
+                {
+                    string note = string.IsNullOrWhiteSpace(f.note) ? "" : " Note: " + f.note.Trim().Replace("\r", " ").Replace("\n", " ");
+                    if (f.kind == "image") n++;
+                    text.Append("- ").Append(store.FilePath(draft, f))
+                        .Append(f.kind == "image" ? (withImages ? " (image " + n + ", shown below)" : " (image " + n + ")") : "")
+                        .Append(note).Append('\n');
+                }
             }
             var open = draft.checklist.Where(c => !c.done).Select(c => c.text).ToList();
             if (open.Count > 0) text.Append("\nThe user still meant to add: ").Append(string.Join("; ", open)).Append('\n');

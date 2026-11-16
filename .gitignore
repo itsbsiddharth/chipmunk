@@ -6,3 +6,5 @@ release/
 
 .vercel/
 stats-history.csv
+mac/.build/
+mac/build/

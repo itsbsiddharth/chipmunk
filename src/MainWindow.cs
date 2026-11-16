@@ -38,7 +38,40 @@ namespace Chipmunk
             PlaceWindow();
             boundsTimer.Tick += (s, e) => { boundsTimer.Stop(); SaveBounds(); };
             Move += (s, e) => { if (Visible) { boundsTimer.Stop(); boundsTimer.Start(); } };
-            Resize += (s, e) => { if (Visible) { boundsTimer.Stop(); boundsTimer.Start(); } };
+            Resize += (s, e) => { if (Visible) { boundsTimer.Stop(); boundsTimer.Start(); } SyncWebBounds(); };
+            VisibleChanged += (s, e) => { if (Visible) SyncWebBounds(); };
+            Activated += (s, e) => SyncWebBounds();
+        }
+
+        static readonly System.Reflection.FieldInfo ControllerField = typeof(WebView2).GetField("_coreWebView2Controller",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        /// <summary>Makes the page fill the whole window again. Toggling "keep on top", minimizing or a
+        /// DPI change could leave WebView2 drawing into a smaller rectangle than the window, with a
+        /// blank strip below it that you couldn't scroll. The control only re-sends its size when the
+        /// size changes, so this re-sends it whenever the window is shown, activated or changed.</summary>
+        public void SyncWebBounds()
+        {
+            try
+            {
+                if (WindowState == FormWindowState.Minimized || web == null) return;
+                var client = ClientRectangle;
+                if (client.Width <= 0 || client.Height <= 0) return;
+                if (web.Bounds != client) web.Bounds = client;
+                var controller = ControllerField != null ? ControllerField.GetValue(web) as CoreWebView2Controller : null;
+                if (controller == null) return;
+                var want = new Rectangle(0, 0, web.ClientSize.Width, web.ClientSize.Height);
+                if (controller.Bounds != want) controller.Bounds = want;
+                controller.NotifyParentWindowPositionChanged();
+            }
+            catch (Exception e) { Log.Error("Sync web bounds: " + e.Message); }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+            // WM_DPICHANGED, WM_DISPLAYCHANGE, WM_EXITSIZEMOVE: the window may have new pixels to fill.
+            if (m.Msg == 0x02E0 || m.Msg == 0x007E || m.Msg == 0x0232) BeginInvoke((Action)SyncWebBounds);
         }
 
         public bool IsReady { get { return ready; } }
@@ -89,7 +122,11 @@ namespace Chipmunk
             Native.SetDarkTitleBar(Handle, dark);
             BackColor = dark ? Color.FromArgb(20, 20, 23) : Color.FromArgb(246, 246, 248);
             if (web != null) web.DefaultBackgroundColor = BackColor;
-            TopMost = core.Settings.alwaysOnTop;
+            if (TopMost != core.Settings.alwaysOnTop)
+            {
+                TopMost = core.Settings.alwaysOnTop;
+                if (IsHandleCreated) BeginInvoke((Action)SyncWebBounds);
+            }
         }
 
         public async Task InitAsync(string uiDir)

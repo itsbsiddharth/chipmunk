@@ -35,10 +35,24 @@ namespace Chipmunk
             Cursor = Cursors.Hand;
             Text = "Chipmunk notification";
             timer.Tick += (s, e) => { timer.Stop(); Hide(); };
-            Click += (s, e) => { Hide(); Activated2?.Invoke(this, EventArgs.Empty); };
+            Click += (s, e) =>
+            {
+                Hide();
+                var act = clickAction;
+                clickAction = null;
+                if (act != null) act(); else Activated2?.Invoke(this, EventArgs.Empty);
+            };
         }
 
         protected override bool ShowWithoutActivation { get { return true; } }
+
+        Action clickAction;
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            Native.HideFromCapture(Handle);
+        }
 
         protected override CreateParams CreateParams
         {
@@ -51,8 +65,10 @@ namespace Chipmunk
             }
         }
 
-        public void Show(string message, bool isError = false, int ms = 2800)
+        /// <summary>Shows a notification. Clicking it runs onClick, or opens Chipmunk when there's none.</summary>
+        public void Show(string message, bool isError = false, int ms = 2800, Action onClick = null)
         {
+            clickAction = onClick;
             text = message ?? "";
             error = isError;
             pal = IsDark() ? UiKit.Dark : UiKit.Light;

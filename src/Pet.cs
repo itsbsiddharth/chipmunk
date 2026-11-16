@@ -11,10 +11,12 @@ namespace Chipmunk
 {
     /// <summary>
     /// Chip, the desktop assistant. It lives at the edge of the screen and earns its place:
-    /// click it to send your draft to any open AI app, drop anything on it to collect it, and it
-    /// speaks up in a bubble when something happens ("Sent to ChatGPT") or when it can help
-    /// ("Add this screenshot?"). Its cheeks fill up as the draft does. Drawn with per-pixel
-    /// alpha so only Chip and its bubble are on screen; everything else clicks through.
+    /// click it to open your draft, right-click for "send to" and more, drop anything on it to
+    /// collect it. Its badge says how much is in the draft and a glowing dot says when every
+    /// screenshot is being collected, so you never collect by accident. It speaks up in a bubble
+    /// only when something happened or it can save you a trip ("Add this screenshot?"). It is
+    /// left out of screenshots and screen recordings. Drawn with per-pixel alpha so only Chip and
+    /// its bubble are on screen; everything else clicks through.
     /// </summary>
     class PetWindow : Form
     {
@@ -52,8 +54,10 @@ namespace Chipmunk
         bool loggedFailure;
 
         string bubble;
-        string bubbleCta;
-        Action bubbleAction;
+        string bubbleCta, bubbleCta2;
+        Action bubbleAction, bubbleAction2;
+        RectangleF ctaRect, cta2Rect;
+        bool collecting;
         DateTime bubbleShown = DateTime.MinValue, bubbleUntil = DateTime.MinValue;
         RectangleF bubbleRect, petRect;
 
@@ -86,6 +90,12 @@ namespace Chipmunk
         }
 
         protected override bool ShowWithoutActivation { get { return true; } }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            Native.HideFromCapture(Handle);
+        }
 
         protected override CreateParams CreateParams
         {
@@ -164,20 +174,23 @@ namespace Chipmunk
         }
 
         public void Catch() { catchAt = DateTime.UtcNow; }
+        public void SetCollecting(bool on) { collecting = on; lastFrame = null; Render(); }
         public void SetMode(int m) { mode = m; }
 
         /// <summary>Shows a speech bubble. With an action, clicking the bubble (or Chip) runs it.</summary>
-        public void Say(string text, int ms = 3200, Action action = null, string cta = null)
+        public void Say(string text, int ms = 3200, Action action = null, string cta = null, Action action2 = null, string cta2 = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return;
             bubble = text;
             bubbleAction = action;
             bubbleCta = action != null ? (cta ?? "Click to do it") : null;
+            bubbleAction2 = action != null ? action2 : null;
+            bubbleCta2 = bubbleAction2 != null ? cta2 : null;
             bubbleShown = DateTime.UtcNow;
             bubbleUntil = DateTime.UtcNow.AddMilliseconds(ms);
         }
 
-        void ClearBubble() { bubbleUntil = DateTime.MinValue; bubbleAction = null; }
+        void ClearBubble() { bubbleUntil = DateTime.MinValue; bubbleAction = null; bubbleAction2 = null; }
 
         // ---------------- mouse ----------------
 
@@ -204,7 +217,8 @@ namespace Chipmunk
         {
             if (BubbleVisible && bubbleRect.Contains(e.Location) && !mouseDown)
             {
-                var act = bubbleAction;
+                // A bubble with two choices ("Add a note" · "Undo") runs the one you clicked.
+                var act = bubbleAction2 != null && cta2Rect.Contains(e.Location) ? bubbleAction2 : bubbleAction;
                 ClearBubble();
                 if (act != null) act();
                 return;
@@ -223,7 +237,7 @@ namespace Chipmunk
                 ClearBubble();
                 act();
             }
-            else ShowMenu();
+            else core.TogglePanel();
             dragging = false;
         }
 
@@ -271,7 +285,7 @@ namespace Chipmunk
             // unchanged frame isn't redrawn, so an idle Chip costs next to nothing.
             float breathe = busy ? (float)Math.Sin(secs * 2 * Math.PI / 3.2) * 0.7f : 0f;
             timer.Interval = busy ? 33 : 200;
-            string sig = busy ? null : count + "|" + pose.Blink + "|" + Math.Round(puff, 3) + "|" + Width + "|" + Left + "," + Top;
+            string sig = busy ? null : count + "|" + collecting + "|" + pose.Blink + "|" + Math.Round(puff, 3) + "|" + Width + "|" + Left + "," + Top;
             if (sig != null && sig == lastFrame) return;
             lastFrame = sig;
 
@@ -295,6 +309,7 @@ namespace Chipmunk
                         using (var ring = new Pen(Color.FromArgb(200, 184, 98, 43), 2f * scale) { DashStyle = DashStyle.Dash })
                             g.DrawEllipse(ring, petRect.X + 2 * scale, petRect.Y + 2 * scale, petRect.Width - 4 * scale, petRect.Height - 4 * scale);
                     if (count > 0) DrawBadge(g);
+                    if (collecting) DrawCollecting(g);
                     if (BubbleVisible) DrawBubble(g, now);
                 }
                 Push(bmp);
@@ -314,7 +329,11 @@ namespace Chipmunk
             using (var fc = new Font("Segoe UI", 11.5f * scale, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 var ts = g.MeasureString(bubble, f, (int)maxW);
-                var cs = bubbleCta != null ? g.MeasureString(bubbleCta, fc, (int)maxW) : SizeF.Empty;
+                string sep = "   ·   ";
+                var c1 = bubbleCta != null ? g.MeasureString(bubbleCta, fc) : SizeF.Empty;
+                var c2 = bubbleCta2 != null ? g.MeasureString(bubbleCta2, fc) : SizeF.Empty;
+                var cSep = bubbleCta2 != null ? g.MeasureString(sep, fc) : SizeF.Empty;
+                var cs = new SizeF(c1.Width + cSep.Width + c2.Width, Math.Max(c1.Height, c2.Height));
                 float bw = Math.Max(ts.Width, cs.Width) + padX * 2;
                 float bh = ts.Height + (bubbleCta != null ? cs.Height + 2 * scale : 0) + padY * 2;
                 float tailY = petRect.Y + 26 * scale;
@@ -337,8 +356,23 @@ namespace Chipmunk
                 using (var tb = new SolidBrush(Color.FromArgb((int)(255 * a), 245, 243, 238)))
                     g.DrawString(bubble, f, tb, new RectangleF(bx + padX, by + padY, maxW, ts.Height + 2));
                 if (bubbleCta != null)
+                {
+                    float cy = by + padY + ts.Height + 2 * scale;
                     using (var cb = new SolidBrush(Color.FromArgb((int)(255 * a), 240, 175, 125)))
-                        g.DrawString(bubbleCta, fc, cb, new RectangleF(bx + padX, by + padY + ts.Height + 2 * scale, maxW, cs.Height + 2));
+                    using (var mb = new SolidBrush(Color.FromArgb((int)(150 * a), 245, 243, 238)))
+                    {
+                        g.DrawString(bubbleCta, fc, cb, new PointF(bx + padX, cy));
+                        // the clickable areas reach to the bubble's edges so they're easy to hit
+                        ctaRect = new RectangleF(bx, cy - 4 * scale, padX + c1.Width + cSep.Width / 2, c1.Height + padY + 4 * scale);
+                        if (bubbleCta2 != null)
+                        {
+                            g.DrawString(sep, fc, mb, new PointF(bx + padX + c1.Width, cy));
+                            g.DrawString(bubbleCta2, fc, cb, new PointF(bx + padX + c1.Width + cSep.Width, cy));
+                            cta2Rect = new RectangleF(ctaRect.Right, cy - 4 * scale, bw - ctaRect.Width, c2.Height + padY + 4 * scale);
+                        }
+                        else cta2Rect = RectangleF.Empty;
+                    }
+                }
             }
         }
 
@@ -352,6 +386,16 @@ namespace Chipmunk
             p.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
             p.CloseFigure();
             return p;
+        }
+
+        /// <summary>A small glowing dot on Chip's shoulder: every screenshot is going into the draft.</summary>
+        void DrawCollecting(Graphics g)
+        {
+            float d = 13 * scale;
+            var r = new RectangleF(petRect.X + 12 * scale, petRect.Y + 12 * scale, d, d);
+            using (var glow = new SolidBrush(Color.FromArgb(70, 224, 120, 60))) g.FillEllipse(glow, r.X - 4 * scale, r.Y - 4 * scale, d + 8 * scale, d + 8 * scale);
+            using (var b = new SolidBrush(Color.FromArgb(255, 222, 96, 40))) g.FillEllipse(b, r);
+            using (var p = new Pen(Color.FromArgb(255, 246, 245, 241), 2f * scale)) g.DrawEllipse(p, r);
         }
 
         void DrawBadge(Graphics g)
