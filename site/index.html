@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Chipmunk: show your AI everything</title>
-<meta name="description" content="A free Windows app for prompts with screenshots. Screenshots, files and notes, into ChatGPT, Claude, Claude Code, Codex or Cursor in one paste. Numbered, in order, with your notes attached.">
+<title>Chipmunk: ten screenshots, one paste</title>
+<meta name="description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, then paste them all into ChatGPT, Claude, Claude Code or Cursor at once, numbered, with your notes attached.">
 <meta name="theme-color" content="#f7f6f2">
 <link rel="canonical" href="https://chipmunk.bsid.dev/">
 <link rel="icon" href="/assets/icon-64.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/icon-256.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://chipmunk.bsid.dev/">
-<meta property="og:title" content="Chipmunk: show your AI everything">
-<meta property="og:description" content="Screenshots, files and notes, numbered and in order, in one paste. Works with ChatGPT, Claude, Claude Code, Codex and Cursor. Free for Windows.">
+<meta property="og:title" content="Chipmunk: ten screenshots, one paste">
+<meta property="og:description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, then paste them all into ChatGPT, Claude, Claude Code or Cursor at once, numbered, with your notes attached.">
 <meta property="og:image" content="https://chipmunk.bsid.dev/assets/og.png">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1260">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Chipmunk: show your AI everything">
-<meta name="twitter:description" content="Screenshots, files and notes, numbered and in order, in one paste. Free for Windows.">
+<meta name="twitter:title" content="Chipmunk: ten screenshots, one paste">
+<meta name="twitter:description" content="Collect screenshots, files and notes as you work. Paste them all into your AI at once. Free for Windows and Mac.">
 <meta name="twitter:image" content="https://chipmunk.bsid.dev/assets/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,8 +46,8 @@
   <section class="hero">
     <div class="wrap hero-in">
       <p class="eyebrow"><span class="dot"></span>Free for Windows &amp; Mac · Open source</p>
-      <h1>Show your AI<br><em>everything.</em></h1>
-      <p class="lede">Screenshots, files and notes, into ChatGPT, Claude, Claude Code, Codex or Cursor in one paste. Numbered, in order, with your notes attached.</p>
+      <h1>Ten screenshots.<br><em>One paste.</em></h1>
+      <p class="lede">Show your AI everything. Collect screenshots, files and notes as you work on your computer, then paste them all into ChatGPT, Claude, Claude Code or Cursor at once. Numbered, with your notes attached.</p>
       <div class="cta">
         <a class="btn btn-ink btn-lg" href="/download" data-download>
           <svg class="winlogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.3l7.4-1v7.2H3V5.3zm8.3-1.2L21 2.8v8.7h-9.7V4.1zM3 12.5h7.4v7.2L3 18.7v-6.2zm8.3 0H21v8.7l-9.7-1.3v-7.4z"/></svg>
@@ -59,27 +59,27 @@
     </div>
 
     <div class="wrap">
-      <div class="demo" id="demo" aria-label="Animated demo: screenshots land in a Chipmunk draft, then one click sends them to an AI chat" role="img">
+      <div class="demo" id="demo" aria-label="Animated demo: screenshots of two laptops land in a Chipmunk draft with notes, then one click sends everything to an AI chat" role="img">
         <div class="win chat">
           <div class="bar"><i></i><i></i><i></i><span>Your AI chat</span></div>
           <div class="chat-body">
             <div class="bubble ai">What are we working on?</div>
             <div class="bubble me" id="demo-sent">
-              <div class="sent-tiles"><span class="mini m1"></span><span class="mini m2"></span><span class="mini m3"><b>CSS</b></span></div>
-              <p>The Sign in button sits on top of the footer on phones. Fix it without changing desktop.</p>
+              <div class="sent-tiles"><span class="mini m1"></span><span class="mini m2"></span><span class="mini m3"><b>&ldquo;</b></span></div>
+              <p>Which of these two laptops should I buy? I edit photos and travel a lot.</p>
             </div>
           </div>
           <div class="composer"><span>Message</span><i class="send-dot"></i></div>
         </div>
 
         <div class="win panel">
-          <div class="p-head"><svg class="p-list" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><b>Fix the mobile sign-in bug</b><span class="p-saved">Saved</span></div>
+          <div class="p-head"><svg class="p-list" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><b>Help me pick a laptop</b><span class="p-saved">Saved</span></div>
           <div class="p-editor"><span id="demo-typed"></span><span class="caret"></span></div>
           <div class="p-label">Collected <span id="demo-count">0</span></div>
           <div class="p-tiles">
-            <div class="tile t1"><div class="shot phone"><span class="pb"></span><span class="pf"></span><i class="n">1</i></div><small>Button cut off here</small></div>
-            <div class="tile t2"><div class="shot devtools"><span></span><span></span><span></span><span></span><i class="n">2</i></div><small>The console error</small></div>
-            <div class="tile t3"><div class="shot file"><b>CSS</b><span>styles.css</span></div><small>Dropped</small></div>
+            <div class="tile t1"><div class="shot product a"><i class="n">1</i></div><small>In my budget</small></div>
+            <div class="tile t2"><div class="shot product b"><i class="n">2</i></div><small>Lighter, $250 more</small></div>
+            <div class="tile t3"><div class="shot quote"><b>&ldquo;</b><span>About 7 hours, not 12</span></div><small>From a review</small></div>
           </div>
           <div class="p-send" id="demo-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span>Send to <b>your AI</b></span><kbd>Ctrl Enter</kbd></div>
         </div>
@@ -110,7 +110,7 @@
     <div class="wrap loop-in">
       <div>
         <h2>The loop it kills</h2>
-        <p class="sub">Asking an AI about something on your screen used to mean a dozen trips between windows, and a long prompt you could lose to one refresh. And on Windows, pasting screenshots into Claude Code, Codex or Cursor is unreliable: Ctrl+V or Alt+V, only one of several images attaching, images in the wrong order. Chipmunk pastes every image in order, or as @file paths for Claude Code in a terminal, every time.</p>
+        <p class="sub">Asking an AI about what's on your screen means screenshot, switch, paste, switch back, again and again, while your prompt waits in a chat box that can reset. Then the AI mixes up which screenshot you meant. Coding tools are worse: on Windows, pasting several screenshots into Claude Code, Codex or Cursor often attaches only one, or scrambles the order. Chipmunk pastes every one, in order, with your notes, every time.</p>
       </div>
       <div class="compare">
         <div class="col before">
@@ -163,7 +163,7 @@
   <!-- product shots -->
   <section class="shots">
     <div class="wrap shots-in">
-      <figure class="shot-main"><img src="/assets/panel-light.webp" alt="The Chipmunk panel with a prompt, screenshots, a CSS file and a Send to ChatGPT button" width="705" height="1230" loading="lazy"></figure>
+      <figure class="shot-main"><img src="/assets/panel-light.webp" alt="A Chipmunk draft asking which laptop to buy, with two numbered screenshots of laptop pages, a note on each, a review quote and a Send to ChatGPT button" width="705" height="1230" loading="lazy"></figure>
       <div class="shot-side">
         <figure><img src="/assets/send-menu.webp" alt="The send menu listing every open AI app" width="705" height="1230" loading="lazy"><figcaption>Send to any open AI app</figcaption></figure>
         <figure><img src="/assets/past-chats.webp" alt="Past chats: picking prompts and images from an earlier chat" width="705" height="1230" loading="lazy"><figcaption>Reuse pieces of past chats</figcaption></figure>
@@ -197,7 +197,7 @@
       </div>
       <div class="chip-stage">
         <div class="cmenu" aria-hidden="true">
-          <div class="cm-card"><span class="cm-thumbs"><i></i><i></i></span><span><b>Fix the mobile sign-in bug</b><small>2 images · 1 file · 49 words</small></span></div>
+          <div class="cm-card"><span class="cm-thumbs"><i></i><i></i></span><span><b>Help me pick a laptop</b><small>2 images · 1 quote · 38 words</small></span></div>
           <div class="cm-label">Send to · right-click Chip</div>
           <div class="cm-row hot"><i class="av c1">C</i><span><b>Claude</b><small>Desktop app</small></span><kbd>↵</kbd></div>
           <div class="cm-row"><i class="av c2">G</i><span><b>ChatGPT</b><small>chatgpt.com · Chrome</small></span></div>

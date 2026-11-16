@@ -86,10 +86,14 @@ await cdp('Runtime.enable');
 // 1. Demo captures the panel will show (2x, like a real high-DPI screenshot)
 await open(`${BASE}/docs/shots/scenes.html`, 1200, 4000, 2);
 const demo = {};
-for (const id of ['signin', 'console', 'colab', 'gpu', 'loss']) {
+for (const [id, small] of [['laptopA', 'demo-laptop-a'], ['laptopB', 'demo-laptop-b']]) {
   const box = await evaluate(`(() => { const r = document.getElementById('${id}').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()`);
   const r = await cdp('Page.captureScreenshot', { format: 'png', clip: { ...box, scale: 1 } });
   demo[id] = 'data:image/png;base64,' + r.data;
+  // A small, still-sharp copy for the website's animated demo tiles (shown about 120px wide).
+  const t = await cdp('Page.captureScreenshot', { format: 'webp', quality: 92, clip: { ...box, scale: 0.2 } });
+  await writeFile(join(ROOT, 'site/assets', small + '.webp'), Buffer.from(t.data, 'base64'));
+  console.log('wrote', './site/assets/' + small + '.webp');
 }
 await cdp('Page.addScriptToEvaluateOnNewDocument', { source: `window.__CHIPMUNK_DEMO = ${JSON.stringify(demo)};` });
 

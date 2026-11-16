@@ -5,9 +5,9 @@
 <h1 align="center">Chipmunk</h1>
 
 <p align="center">
-  <b>Show your AI everything.</b><br>
-  Screenshots, files and notes into ChatGPT, Claude, Claude Code, Codex or Cursor in one paste.<br>
-  Numbered, in order, with your notes attached.
+  <b>Ten screenshots. One paste.</b><br>
+  Show your AI everything. Collect screenshots, files and notes as you work on your computer,<br>
+  then paste them all into ChatGPT, Claude, Claude Code, Codex or Cursor at once. Numbered, with your notes attached.
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/img/demo.webp" alt="Screenshots land in a Chipmunk draft, you write the prompt, one click sends it all to your AI chat" width="100%">
+  <img src="docs/img/demo.webp" alt="Screenshots of two laptops land in a Chipmunk draft with notes, you write the question, one click sends it all to your AI chat" width="100%">
 </p>
 
 ## Why
@@ -50,7 +50,7 @@ Giving an AI the full picture is still copy-paste chaos:
 | **3. Send** | `Ctrl+Enter`. Chipmunk switches to ChatGPT, Claude, Claude Code, Codex or Cursor and pastes the images in order, then your text with `Image 2: your note`. It puts your clipboard back afterwards. |
 
 <p align="center">
-  <img src="docs/img/panel-light.png" alt="A Chipmunk draft with a prompt, two numbered screenshots with notes, a CSS file and a console error" width="32%">
+  <img src="docs/img/panel-light.png" alt="A Chipmunk draft asking which laptop to buy, with two numbered screenshots of laptop pages, a note on each and a review quote" width="32%">
   &nbsp;
   <img src="docs/img/send-menu.png" alt="Send to any open AI app" width="32%">
   &nbsp;

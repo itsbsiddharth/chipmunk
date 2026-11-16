@@ -50,7 +50,7 @@
   const send = $('#demo-send');
   const pointer = $('#demo-pointer');
   const steps = $$('.steps-ind li', demo);
-  const prompt = 'The Sign in button sits on top of the footer on phones. Fix it without changing desktop.';
+  const prompt = 'Which of these two laptops should I buy? I edit photos and travel a lot.';
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const step = (n) => steps.forEach((s) => s.classList.toggle('on', Number(s.dataset.step) === n));
 

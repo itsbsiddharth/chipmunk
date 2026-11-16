@@ -75,23 +75,6 @@ export class MockHost {
     c.pinned = true; c.updated = new Date(Date.now() - 3 * 86400000).toISOString();
 
     this.current = a.id;
-    if (DEMO) {
-      this.settings.onboarded = true;
-      const m = this.make('Fix the mobile sign-in bug', `Since yesterday's CSS refactor, the Sign in button sits on top of the footer on phones. Desktop looks fine.
-
-Please:
-1. Find what in the refactor causes the overlap
-2. Fix it without changing the desktop layout
-3. Tell me how to check it at 375px wide`);
-      m.attachments.push(
-        { id: id('a'), kind: 'image', name: 'Screenshot 9:15 AM', source: 'Screenshot · Chrome', url: DEMO.signin, w: 2400, h: 1500, bytes: 412000, include: true, note: 'The button covers the footer at 375px' },
-        { id: id('a'), kind: 'image', name: 'Screenshot 9:16 AM', source: 'Screenshot · DevTools', url: DEMO.console, w: 2400, h: 1500, bytes: 298000, include: true, note: 'This error shows on every page load' },
-        { id: id('a'), kind: 'file', name: 'SignIn.module.css', ext: 'css', bytes: 2140, source: 'Dropped on Chip', include: true },
-        { id: id('a'), kind: 'text', text: "Uncaught TypeError: Cannot read properties of undefined (reading 'offsetHeight') at stickToFooter (SignIn.tsx:42:31)", source: 'Console · localhost:5173', include: true });
-      m.updated = new Date(Date.now() - 20000).toISOString();
-      this.current = m.id;
-      setTimeout(() => this.emit('target', this.windows[1]), 60);
-    }
     this.versionsStore.set(a.id, [
       { name: 'v3', time: new Date(Date.now() - 6 * 60000).toISOString(), text: 'My Colab notebook stops after ~40 minutes.\n\nWhat I need: why it stops.' },
       { name: 'v2', time: new Date(Date.now() - 20 * 60000).toISOString(), text: 'Colab keeps stopping.' },
@@ -112,7 +95,35 @@ Please:
       ],
       claude: [], gemini: [],
     };
+    if (DEMO) this.useMarketingDemo();
     setTimeout(() => this.emit('target', this.windows[0]), 50);
+  }
+
+  // The everyday example used in every marketing image: picking between two laptops seen on two
+  // shopping sites, with a note on each screenshot and a line from a review, sent to ChatGPT.
+  useMarketingDemo() {
+    this.settings.onboarded = true;
+    const m = this.make('Help me pick a laptop', `I'm choosing between these two laptops. I edit photos and travel a lot, and my budget is about $1,200.
+
+Which one should I buy? Explain the trade-offs in plain words.`);
+    m.attachments.push(
+      { id: id('a'), kind: 'image', name: 'Screenshot 7:42 PM', source: 'Screenshot · Chrome', url: DEMO.laptopA, w: 2400, h: 1500, bytes: 389000, include: true, note: 'In my budget, but heavier' },
+      { id: id('a'), kind: 'image', name: 'Screenshot 7:44 PM', source: 'Screenshot · Chrome', url: DEMO.laptopB, w: 2400, h: 1500, bytes: 402000, include: true, note: 'Lighter and faster, but $250 more' },
+      { id: id('a'), kind: 'text', text: 'Battery life is the weak spot: I got about 7 hours of real work, not the 12 on the box.', source: 'A review of the Aero 14', include: true });
+    m.updated = new Date(Date.now() - 20000).toISOString();
+    this.current = m.id;
+    this.windows = [
+      { hwnd: '101', label: 'ChatGPT', app: 'ChatGPT', title: 'ChatGPT', terminal: false, ai: true },
+      { hwnd: '104', label: 'Claude', app: 'Chrome', title: 'Weekend in Lisbon - Claude', terminal: false, ai: true },
+      { hwnd: '102', label: 'Claude Code', app: 'Terminal', title: 'Claude Code · my-website', terminal: true, ai: true },
+      { hwnd: '103', label: 'Cursor', app: 'Cursor', title: 'Cursor · portfolio', terminal: false, ai: true },
+      { hwnd: '105', label: 'Slack', app: 'Slack', title: 'Slack · #general', terminal: false, ai: false },
+      { hwnd: '106', label: 'File Explorer', app: 'File Explorer', title: 'Downloads', terminal: false, ai: false },
+    ];
+    this.saved.chatgpt = [
+      { id: 'g1', title: 'Laptop for photo editing', sub: 'chatgpt.com', updated: new Date(Date.now() - 26 * 3600000).toISOString(), turns: 3, images: 3 },
+      { id: 'g2', title: 'Weekend in Lisbon', sub: 'chatgpt.com', updated: new Date(Date.now() - 4 * 86400000).toISOString(), turns: 6, images: 0 },
+    ];
   }
 
   make(title, text) {
@@ -289,6 +300,18 @@ Please:
       case 'historyConversation': {
         await wait(150);
         const names = { 'claude-code': 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini' };
+        if (DEMO) {
+          const t = (h) => new Date(Date.now() - h * 3600000).toISOString();
+          return {
+            source: args.source, sourceName: names[args.source], id: args.sessionId, title: 'Laptop for photo editing',
+            turns: [
+              { index: 0, role: 'user', time: t(27), text: "Here are the two laptops I'm deciding between. Which is better for editing photos?", images: [{ index: 0, thumb: DEMO.laptopA }, { index: 1, thumb: DEMO.laptopB }] },
+              { index: 1, role: 'assistant', time: null, text: 'For photo editing, the Volt 15 is the stronger pick: twice the memory makes big photo libraries feel smooth, and it is 400 g lighter to carry.\n\nThe Aero 14 is the better value if you mostly edit a few photos at a time. It is $250 cheaper, and 16 GB is enough for that.', images: [] },
+              { index: 2, role: 'user', time: t(26.5), text: 'Is it worth waiting for a sale?', images: [] },
+              { index: 3, role: 'assistant', time: null, text: 'Brightline usually takes 10 to 15% off the Volt 15 in late November, which would bring it close to your budget.', images: [] },
+            ],
+          };
+        }
         return {
           source: args.source, sourceName: names[args.source], id: args.sessionId, title: 'Debug the Colab OOM',
           turns: [
