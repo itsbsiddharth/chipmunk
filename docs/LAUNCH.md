@@ -17,8 +17,11 @@ Chipmunk fixes all four: drafts saved as you type (with versions, on your disk),
 
 | File | Use |
 | --- | --- |
-| `docs/video/chipmunk-launch-2026-11-16.mp4` | Main launch video, 30 s, 1920x1080, no music. Cuts every 0.5 s (120 BPM). Source: `docs/video/launch.html`, render with `node tools/video.mjs`. |
-| `docs/video/poster-hook.png`, `poster-fixed.png`, `poster-endcard.png` | Stills from the video, for thumbnails and image posts. |
+| `docs/video/chipmunk-launch-2026-11-17.mp4` | **Main launch video for X**, 30 s, 1920x1080, with music and sound effects. The old way is shown on a laptop (screenshot, Alt+Tab, paste, the tab reloads), then Chipmunk. Source: `docs/video/launch.html`; render with `node tools/video.mjs`. |
+| `docs/video/chipmunk-launch-2026-11-17-silent.mp4` | Same video without sound, for TikTok and Reels (pick a trending sound in the app) or for your own track. |
+| `docs/video/chipmunk-launch-music.wav` | The music on its own: 120 BPM warm house, timed to every cut, with a shutter on each screenshot, keys while typing, a click on Send and a chime on each fix. Made by `python tools/music.py`; it's ours, so it's safe on every platform. |
+| `docs/video/chipmunk-launch-2026-11-16.mp4` | The first cut (word-pile loop, no music). Kept for reuse. |
+| `docs/video/poster-*.png` | Stills from the video (hook, Alt+Tab, explain, fixed, end card), for thumbnails and image posts. |
 | `docs/img/panel-light.png`, `send-menu.png`, `past-chats.png`, `hero.png` | Product shots for replies. |
 | `site/assets/og.png` | Social card (shown when the link is shared). |
 | `docs/archive/` | Earlier headlines and image sets. |
@@ -89,6 +92,12 @@ Post **one** main post with the video uploaded directly (not a YouTube link). Pu
 
 ## Music and voice
 
-- X: add a royalty-free track (Pixabay Music, "upbeat tech", ~120 BPM) in CapCut, or post it silent: most people watch muted and the captions carry the story.
-- TikTok and Reels: upload silent and pick a trending sound inside the app.
-- A voice-over isn't needed for this video. Gemini's text-to-speech models have a free tier in Google AI Studio if we make a narrated version later.
+- The main video already has its own music and sound effects, safe to post anywhere. `node tools/video.mjs --music some-track.mp3` puts any other track on it instead.
+- TikTok and Reels: upload the silent video and pick a trending sound inside the app.
+- To try a Google-made track instead: in the Gemini app (free for tracks up to 30 seconds), ask it to create music with the prompt below, download it, then run `node tools/video.mjs --music <the file>`.
+
+> Create a 30-second instrumental track at exactly 120 BPM in F major, for a warm, premium tech product launch video. Style: modern feel-good house with a soft Rhodes electric piano, warm analog pads, a round sub bass and crisp but gentle drums. No vocals.
+> Structure, to the second: 0 to 3 s, soft Rhodes chords only, airy and hopeful. 3 to 7 s, a kick on every beat and building hi-hats, rising tension, ending in a short riser. At 7.5 s, a satisfying impact hit, then a moment of air. 8 to 16 s, the full groove: four-on-the-floor kick, claps on 2 and 4, offbeat open hats, a bouncy bass, chords Fmaj7, G6, Em7, Am9, one bar each. 16 to 19 s, the same groove under a low-pass filter, softer. At 19 s, a one-beat pause, then at 19.5 s the full groove returns brighter, with a light bell melody on top. At 24 s, the drums stop on a big warm chord, then the chords settle slowly to C major and fade out by 30 s.
+> Mood: clean, optimistic, confident, like an Apple or Linear launch film. Not cheesy, not corporate stock music.
+
+- A voice-over isn't needed: most people watch muted and the captions tell the story. Gemini's text-to-speech has a free tier in Google AI Studio if we make a narrated version later.

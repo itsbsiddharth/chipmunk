@@ -22,7 +22,40 @@
   /* 2 the loop */
   .pile { position: absolute; left: 960px; top: 540px; }
   .card-shot { position: absolute; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 30px 60px -24px rgba(60, 38, 18, .5), 0 0 0 1px rgba(0, 0, 0, .06); }
-  .word { position: absolute; left: 960px; top: 540px; background: #1d1b18; color: #fff; font-size: 104px; line-height: 1; padding: 22px 56px 30px; border-radius: 30px; box-shadow: 0 50px 90px -30px rgba(0, 0, 0, .55); white-space: nowrap; }
+  .word { position: absolute; left: 960px; top: 92px; z-index: 5; background: #1d1b18; color: #fff; font-size: 78px; line-height: 1; padding: 16px 44px 22px; border-radius: 26px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .55); white-space: nowrap; }
+  .screen { position: absolute; left: 236px; top: 176px; width: 1448px; height: 846px; border: 12px solid #1d1b18; border-radius: 26px; overflow: hidden; background: linear-gradient(140deg, #f3d9bd 0%, #e9c6a6 40%, #c9b5d6 100%); box-shadow: 0 40px 90px -30px rgba(40, 25, 10, .5); }
+  .lapbase { position: absolute; left: 150px; top: 1020px; width: 1620px; height: 26px; border-radius: 0 0 26px 26px; background: linear-gradient(#cfcac2, #a9a39a); }
+  .lapbase::after { content: ""; position: absolute; left: 50%; top: 0; width: 200px; height: 8px; margin-left: -100px; border-radius: 0 0 10px 10px; background: #8f8a81; }
+  .dwin { position: absolute; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 30px 60px -24px rgba(40, 25, 10, .45), 0 0 0 1px rgba(0, 0, 0, .06); transform-origin: 50% 60%; }
+  #dBrowser { left: 50px; top: 46px; width: 936px; height: 585px; }
+  #dChat { left: 600px; top: 112px; width: 760px; height: 610px; display: flex; flex-direction: column; background: #fbfaf8; }
+  .cbar { height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 16px; background: #efede7; color: #57534b; font-size: 18px; font-weight: 600; flex: none; }
+  .cbar i { width: 12px; height: 12px; border-radius: 50%; background: #d8d3c8; display: block; }
+  .cbar span { margin-left: 10px; }
+  .cbody { flex: 1; padding: 26px; }
+  .bub { display: inline-block; background: #efede7; border-radius: 16px; padding: 12px 18px; font-size: 21px; color: #1d1b18; }
+  .ccomp { margin: 0 20px 20px; border: 1px solid #e6e2d9; border-radius: 18px; background: #fff; padding: 14px 16px; min-height: 150px; }
+  .atts { display: flex; gap: 10px; min-height: 66px; }
+  .att { width: 104px; height: 66px; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 0 0 1px #e6e2d9; opacity: 0; }
+  .ctext { font-size: 23px; line-height: 1.4; margin-top: 12px; color: #1d1b18; }
+  .ccaret { display: inline-block; width: 2px; height: 26px; background: #1d1b18; vertical-align: -5px; margin-left: 1px; }
+  .reload { position: absolute; inset: 46px 0 0 0; background: #fff; display: grid; place-items: center; opacity: 0; }
+  .spin { width: 54px; height: 54px; border-radius: 50%; border: 6px solid #e6e2d9; border-top-color: #8f8a81; }
+  #dmarq { position: absolute; z-index: 6; left: 50px; top: 46px; width: 936px; height: 585px; overflow: visible; }
+  #dflash { position: absolute; z-index: 7; left: 50px; top: 46px; width: 936px; height: 585px; border-radius: 12px; background: #fff; opacity: 0; }
+  .alttab { position: absolute; z-index: 9; left: 50%; top: 46%; transform: translate(-50%, -50%); background: rgba(32, 30, 28, .82); border-radius: 22px; padding: 22px 24px 16px; display: none; box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .6); }
+  .at-row { display: flex; gap: 18px; }
+  .at-item { width: 300px; border-radius: 14px; padding: 8px; border: 3px solid transparent; color: #f2eee7; font-size: 19px; text-align: center; }
+  .at-item.on { border-color: #fff; background: rgba(255, 255, 255, .08); }
+  .at-th { height: 170px; border-radius: 8px; overflow: hidden; position: relative; background: #fff; margin-bottom: 8px; }
+  .chat-th { background: #fbfaf8; }
+  .chat-th::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 14px; background: #efede7; }
+  .chat-th::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 14px; height: 46px; border-radius: 10px; border: 1px solid #e6e2d9; background: #fff; }
+  .at-key { margin-top: 12px; text-align: center; color: #c9c3b8; font-size: 18px; letter-spacing: .04em; }
+  .taskbar { position: absolute; z-index: 8; left: 0; right: 0; bottom: 0; height: 58px; background: rgba(250, 248, 244, .78); display: flex; justify-content: center; align-items: center; gap: 14px; }
+  .tb { width: 38px; height: 38px; border-radius: 10px; display: block; position: relative; }
+  .tb.b1 { background: #8f8a81; } .tb.b2 { background: radial-gradient(circle at 35% 35%, #f0b35e, #c2410c); } .tb.b3 { background: #1d1b18; } .tb.b4 { background: #9ab6d8; }
+  .tb.on::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -9px; height: 4px; border-radius: 3px; background: #1d1b18; }
 
   /* 3 meet */
   #icon { position: absolute; left: 860px; top: 250px; width: 200px; height: 200px; border-radius: 46px; box-shadow: 0 34px 70px -24px rgba(60, 38, 18, .45); }
@@ -85,7 +118,23 @@
     <h1 class="line hook serif" id="hook2">But it can&rsquo;t <em>see your screen.</em></h1>
   </section>
 
-  <section class="layer" id="s2"><div class="pile" id="pile"></div><div class="word serif" id="word"></div></section>
+  <section class="layer" id="s2">
+    <div class="word serif" id="word"></div>
+    <div class="lapbase"></div>
+    <div class="screen" id="screen">
+      <div class="dwin" id="dBrowser"></div>
+      <div class="dwin" id="dChat">
+        <div class="cbar"><i></i><i></i><i></i><span>Your AI</span></div>
+        <div class="cbody"><div class="bub">What are we working on?</div></div>
+        <div class="ccomp"><div class="atts"><span class="att" id="att0"></span><span class="att" id="att1"></span></div><div class="ctext"><span id="ctext"></span><span class="ccaret" id="ccaret"></span></div></div>
+        <div class="reload" id="reload"><div class="spin" id="spin"></div></div>
+      </div>
+      <svg id="dmarq" viewBox="0 0 936 585"><rect id="dmrect" x="2.5" y="2.5" width="931" height="580" rx="12" fill="none" stroke="#b5602a" stroke-width="5"/></svg>
+      <div id="dflash"></div>
+      <div class="alttab" id="alttab"><div class="at-row"><div class="at-item" id="atB"><div class="at-th" id="atBth"></div>Browser</div><div class="at-item" id="atC"><div class="at-th chat-th"></div>Your AI</div></div><div class="at-key">Alt + Tab</div></div>
+      <div class="taskbar"><i class="tb b1"></i><i class="tb b2" id="tbB"></i><i class="tb b3" id="tbC"></i><i class="tb b4"></i></div>
+    </div>
+  </section>
 
   <section class="layer" id="s3">
     <img id="icon" src="../../site/assets/icon-256.png" alt="">
@@ -192,7 +241,8 @@ const SHOTS = ['home', 'order', 'reviews'];
 const NOTES = ['The button covers the headline', 'Total should be $20, not $0', 'Make our reviews look like this'];
 const B = [10.0, 12.5, 14.75];               // when each screenshot is taken
 const PROMPT = 'Fix these three things on my bakery’s website. Keep everything else the same.';
-const LOOP = ['Screenshot.', 'Switch apps.', 'Paste.', 'Explain it.', 'Switch back.', 'Screenshot.', 'Switch.', 'Paste…'];
+const LOOP = ['Screenshot.', 'Switch apps.', 'Paste.', 'Explain it.', 'Switch back.', 'Screenshot.', 'Switch again.', 'Paste. Explain…', 'Tab reloads.'];
+const TYPE1 = 'The button covers the headline. ', TYPE2 = 'And in this one the total is';
 const PILE = [
   { s: 'home', x: -560, y: -250, r: -8, fx: -1500, fy: -420 }, { s: 'order', x: 520, y: -235, r: 7, fx: 1500, fy: -300 },
   { s: 'reviews', x: -500, y: 245, r: 5, fx: -1400, fy: 600 }, { s: 'home', x: 560, y: 250, r: -6, fx: 1500, fy: 640 },
@@ -209,7 +259,11 @@ const ready = (async () => {
   el.hook1 = words($('hook1')); el.hook2 = words($('hook2'));
   el.meet = words($('meet')); el.tag = words($('tag'));
 
-  el.pile = PILE.map((p) => { const c = document.createElement('div'); c.className = 'card-shot'; c.style.width = '360px'; c.style.height = '225px'; c.append(scene(p.s, .3)); $('pile').append(c); return c; });
+  el.dHome = scene('home', .78); el.dOrder = scene('order', .78);
+  $('dBrowser').append(el.dHome, el.dOrder);
+  $('att0').append(scene('home', 104 / 1200)); $('att1').append(scene('order', 104 / 1200));
+  el.atHome = scene('home', 278 / 1200); el.atOrder = scene('order', 278 / 1200);
+  $('atBth').append(el.atHome, el.atOrder);
 
   el.browser = SHOTS.map((s) => { const h = scene(s, SB); $('browser').append(h); return h; });
   el.thumbs = SHOTS.map((s, i) => { const h = scene(s, 205 / 1200); $('thumb' + i).prepend(h); return h; });
@@ -259,25 +313,69 @@ function render(t) {
     $('hook2').style.transform = `scale(${1 + o * .06})`;
   }
 
-  // 2. The loop: 3 - 7.5 s, one word per beat while screenshots pile up
+  // 2. The loop, as it looks on your own laptop: 3 - 7.5 s, one step per beat
   const s2 = t >= 3 && t < 7.5; show($('s2'), s2);
   if (s2) {
     const k = Math.min(LOOP.length - 1, Math.floor((t - 3) / .5));
     const word = $('word');
     word.textContent = LOOP[k];
     const pop = out3(prog(t, 3 + k * .5, 3 + k * .5 + .16));
-    const leave = prog(t, 7.1, 7.45);
-    word.style.opacity = (k === 0 ? out3(prog(t, 3, 3.12)) : 1) * (1 - leave);
-    word.style.transform = `translate(-50%, -50%) scale(${(1.12 - .12 * pop) * (1 - leave * .1)}) rotate(${k % 2 ? 1.5 : -1.5}deg)`;
-    el.pile.forEach((c, i) => {
-      const p = PILE[i];
-      const a = back(prog(t, 3 + i * .5, 3 + i * .5 + .38));
-      const shown = t >= 3 + i * .5;
-      c.style.display = shown ? 'block' : 'none';
-      c.style.opacity = 1 - leave;
-      const x = lerp(p.fx, p.x, a) * (1 + leave * .25), y = lerp(p.fy, p.y, a) * (1 + leave * .25);
-      c.style.transform = `translate(${x - 180}px, ${y - 112}px) rotate(${p.r * (1 + (1 - a) * 1.5)}deg)`;
+    const leave = prog(t, 7.38, 7.5);
+    word.style.opacity = out3(prog(t, 3, 3.12)) * (1 - leave);
+    word.style.transform = `translate(-50%, -50%) scale(${1.1 - .1 * pop})`;
+    const inn = out3(prog(t, 3, 3.25));
+    $('screen').style.opacity = inn * (1 - leave);
+    $('screen').style.transform = `translateY(${(1 - inn) * 40}px)`;
+    document.querySelector('#s2 .lapbase').style.opacity = inn * (1 - leave);
+
+    // which window is in front: browser, chat (3.8), browser (5.3), chat (6.3)
+    const SW = [[3.5, 3.8, 'chat'], [5.0, 5.3, 'browser'], [6.0, 6.3, 'chat']];
+    let front = 'browser', since = 3;
+    SW.forEach(([a, b, w]) => { if (t >= b) { front = w; since = b; } });
+    const lift = out3(prog(t, since, since + .16));
+    const fb = front === 'browser', order = t >= 5.3;
+    $('dBrowser').style.zIndex = fb ? 2 : 1; $('dChat').style.zIndex = fb ? 1 : 2;
+    $('dBrowser').style.transform = `scale(${fb ? .975 + .025 * lift : 1})`;
+    $('dChat').style.transform = `scale(${fb ? 1 : .975 + .025 * lift})`;
+    $('dBrowser').style.filter = fb ? 'none' : 'saturate(.85) brightness(.97)';
+    $('dChat').style.filter = fb ? 'saturate(.85) brightness(.97)' : 'none';
+    el.dHome.style.opacity = order ? 0 : 1; el.dOrder.style.opacity = order ? 1 : 0;
+    $('tbB').classList.toggle('on', fb); $('tbC').classList.toggle('on', !fb);
+
+    // the Alt+Tab switcher, exactly like on your computer
+    const sw = SW.find(([a, b]) => t >= a && t < b);
+    $('alttab').style.display = sw ? 'block' : 'none';
+    if (sw) {
+      const toChat = sw[2] === 'chat', moved = t >= sw[0] + .12;
+      $('atB').classList.toggle('on', toChat ? !moved : moved);
+      $('atC').classList.toggle('on', toChat ? moved : !moved);
+      el.atHome.style.opacity = t >= 5.3 ? 0 : 1; el.atOrder.style.opacity = t >= 5.3 ? 1 : 0;
+      $('alttab').style.opacity = out3(prog(t, sw[0], sw[0] + .06));
+    }
+
+    // screenshots of the browser: an outline traces the window, then a flash
+    let mOn = 0, flash = 0;
+    [3.05, 5.55].forEach((a) => {
+      if (t >= a && t < a + .42) mOn = prog(t, a, a + .25);
+      if (t >= a + .26) flash = Math.max(flash, .75 * (1 - prog(t, a + .3, a + .45)) * prog(t, a + .26, a + .3));
     });
+    const per = 931 * 2 + 580 * 2;
+    $('dmrect').style.strokeDasharray = per; $('dmrect').style.strokeDashoffset = per * (1 - mOn);
+    $('dmarq').style.opacity = mOn > 0 ? 1 : 0; $('dflash').style.opacity = flash;
+
+    // paste into the chat, explain, then the tab reloads and it's all gone
+    const gone = t >= 7.12;
+    [[4.05, 'att0'], [6.55, 'att1']].forEach(([a, id]) => {
+      const x = back(prog(t, a, a + .2));
+      $(id).style.opacity = gone ? 0 : prog(t, a, a + .05);
+      $(id).style.transform = `scale(${.6 + .4 * x})`;
+    });
+    const n1 = Math.round(TYPE1.length * prog(t, 4.5, 4.95)), n2 = Math.round(TYPE2.length * prog(t, 6.62, 6.98));
+    $('ctext').textContent = gone ? '' : TYPE1.slice(0, n1) + TYPE2.slice(0, n2);
+    $('ccaret').style.opacity = !fb && Math.floor(t * 3) % 2 === 0 ? 1 : 0;
+    const rl = t >= 7.02 && t < 7.3;
+    $('reload').style.opacity = rl ? 1 : 0;
+    $('spin').style.transform = `rotate(${t * 720}deg)`;
   }
 
   // 3. Meet Chipmunk: 7.5 - 9.5 s

@@ -1,5 +1,7 @@
-// Renders the launch video (docs/video/launch.html) to release/chipmunk-launch.mp4:
+// Renders the launch video (docs/video/launch.html) to release/chipmunk-launch.mp4 (with the music
+// from docs/video/chipmunk-launch-music.wav, made by tools/music.py) and chipmunk-launch-silent.mp4:
 //   node tools/video.mjs              full video
+//   node tools/video.mjs --music other.mp3   use another track (any format the browser can play)
 //   node tools/video.mjs --stills 3,12,22,28   a few frames as PNGs into release/, for a quick look
 // Each frame is drawn exactly with render(t), captured from the Edge or Chrome on this PC, encoded
 // to H.264 by the browser itself (WebCodecs), and packed into an MP4 here. No ffmpeg needed.
@@ -7,18 +9,21 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { existsSync, createReadStream } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { join, extname, dirname } from 'node:path';
+import { join, extname, dirname, relative, sep, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'release', 'chipmunk-launch.mp4');
+const SILENT = join(ROOT, 'release', 'chipmunk-launch-silent.mp4');
+const mi = process.argv.indexOf('--music');
+const MUSIC = mi > 0 ? resolve(process.argv[mi + 1]) : join(ROOT, 'docs', 'video', 'chipmunk-launch-music.wav');
 const FPS = 30, W = 1920, H = 1080, BITRATE = 12_000_000;
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.mp4': 'video/mp4' };
+const MIME = { '.wav': 'audio/wav', '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.mp4': 'video/mp4' };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const frames = join(tmpdir(), 'chipmunk-video-' + Date.now());
 await mkdir(frames, { recursive: true });
-let upload = null;
+let upload = null, uploadAudio = null;
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -27,8 +32,14 @@ const server = createServer(async (req, res) => {
     upload = { meta: JSON.parse(decodeURIComponent(req.headers['x-meta'])), data: Buffer.concat(parts) };
     res.end('ok'); return;
   }
+  if (req.method === 'POST' && url.pathname === '/__upload_audio') {
+    const parts = []; for await (const c of req) parts.push(c);
+    uploadAudio = { meta: JSON.parse(decodeURIComponent(req.headers['x-meta'])), data: Buffer.concat(parts) };
+    res.end('ok'); return;
+  }
+  if (url.pathname === '/__music') { res.writeHead(200, { 'Cache-Control': 'no-store' }); createReadStream(MUSIC).pipe(res); return; }
   if (url.pathname === '/__blank') { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end('<!doctype html><meta charset=utf-8><title>encode</title>'); return; }
-  const path = url.pathname.startsWith('/__frames/') ? join(frames, url.pathname.slice(10)) : url.pathname === '/__out.mp4' ? OUT : join(ROOT, decodeURIComponent(url.pathname));
+  const path = url.pathname.startsWith('/__frames/') ? join(frames, url.pathname.slice(10)) : url.pathname === '/__out.mp4' ? OUT : url.pathname === '/__silent.mp4' ? SILENT : join(ROOT, decodeURIComponent(url.pathname));
   if (!existsSync(path)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { 'Content-Type': MIME[extname(path)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
   createReadStream(path).pipe(res);
@@ -138,18 +149,60 @@ if (process.argv[2] === '--stills') {
   })()`);
   if (!upload) throw new Error('No encoded video came back.');
 
-  // 3. pack into an MP4 (moov first, so it starts playing before it fully downloads)
-  const { sizes, keys, avcC } = upload.meta;
-  await mkdir(dirname(OUT), { recursive: true });
-  await writeFile(OUT, Buffer.concat([...mp4Header({ sizes, keys, avcC: Buffer.from(avcC, 'base64') }), upload.data]));
-  console.log('wrote', OUT.replace(ROOT, '.'), (upload.data.length / 1e6).toFixed(1) + ' MB');
+  // 3. the music, encoded to AAC by the browser (the format X and every player accept)
+  let audio = null;
+  if (MUSIC && existsSync(MUSIC)) {
+    const musicUrl = '/__music';
+    const ok = await evaluate(`(async () => {
+      const cfg = { codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2, bitrate: 192000 };
+      if (!(await AudioEncoder.isConfigSupported(cfg)).supported) return false;
+      const ctx = new OfflineAudioContext(2, Math.round(48000 * ${duration}), 48000);
+      const src = ctx.createBufferSource();
+      src.buffer = await ctx.decodeAudioData(await (await fetch('${musicUrl}')).arrayBuffer());
+      src.connect(ctx.destination); src.start();
+      const out = await ctx.startRendering();
+      const L = out.getChannelData(0), R = out.getChannelData(1);
+      const chunks = [], sizes = []; let asc = null, err = null;
+      const enc = new AudioEncoder({
+        output: (c, m) => {
+          if (m && m.decoderConfig && m.decoderConfig.description && !asc) asc = new Uint8Array(m.decoderConfig.description.buffer || m.decoderConfig.description);
+          const b = new Uint8Array(c.byteLength); c.copyTo(b); chunks.push(b); sizes.push(b.length);
+        },
+        error: (e) => { err = e; },
+      });
+      enc.configure(cfg);
+      for (let i = 0; i < L.length; i += 1024) {
+        const n = Math.min(1024, L.length - i), d = new Float32Array(n * 2);
+        d.set(L.subarray(i, i + n), 0); d.set(R.subarray(i, i + n), n);
+        enc.encode(new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i * 1e6 / 48000), data: d }));
+      }
+      await enc.flush();
+      if (err) throw err;
+      let s = ''; for (const x of (asc || [0x11, 0x90])) s += String.fromCharCode(x);
+      await fetch('/__upload_audio', { method: 'POST', headers: { 'x-meta': encodeURIComponent(JSON.stringify({ sizes, asc: btoa(s) })) }, body: new Blob(chunks) });
+      return true;
+    })()`);
+    if (ok && uploadAudio) audio = { sizes: uploadAudio.meta.sizes, asc: Buffer.from(uploadAudio.meta.asc, 'base64'), data: uploadAudio.data };
+    else console.log('This browser cannot encode AAC audio, so the video stays silent.');
+  }
 
-  // 4. check it plays: duration, size, and a decoded frame
+  // 4. pack into MP4s (moov first, so they start playing before they fully download):
+  //    one with the music, one silent for TikTok and Reels, where you pick a sound in the app
+  const video = { sizes: upload.meta.sizes, keys: upload.meta.keys, avcC: Buffer.from(upload.meta.avcC, 'base64'), data: upload.data };
+  await mkdir(dirname(OUT), { recursive: true });
+  await writeFile(SILENT, mp4({ video }));
+  console.log('wrote', SILENT.replace(ROOT, '.'), (video.data.length / 1e6).toFixed(1) + ' MB');
+  if (audio) {
+    await writeFile(OUT, mp4({ video, audio }));
+    console.log('wrote', OUT.replace(ROOT, '.'), 'with music');
+  }
+
+  // 5. check it plays: duration, size, sound, and a decoded frame
   await open(`${BASE}/__blank`);
   const info = await evaluate(`new Promise((resolve) => {
-    const v = document.createElement('video'); v.muted = true; v.src = '/__out.mp4';
+    const v = document.createElement('video'); v.muted = true; v.src = '${audio ? '/__out.mp4' : '/__silent.mp4'}';
     v.onloadedmetadata = () => { v.currentTime = 14; };
-    v.onseeked = () => resolve({ duration: v.duration, width: v.videoWidth, height: v.videoHeight, frames: v.getVideoPlaybackQuality ? true : false });
+    v.onseeked = () => resolve({ duration: v.duration, width: v.videoWidth, height: v.videoHeight, audioTracks: v.audioTracks ? v.audioTracks.length : 'n/a', hasAudio: v.mozHasAudio ?? (v.webkitAudioDecodedByteCount !== undefined ? 'see below' : 'n/a') });
     v.onerror = () => resolve({ error: v.error && v.error.message });
   })`);
   console.log('plays back:', JSON.stringify(info));
@@ -160,34 +213,54 @@ await sleep(500);
 await rm(frames, { recursive: true, force: true }).catch(() => {});
 await rm(profile, { recursive: true, force: true }).catch(() => {});
 
-function mp4Header({ sizes, keys, avcC }) {
+function mp4({ video, audio }) {
   const box = (type, ...parts) => { const body = Buffer.concat(parts.map((p) => Buffer.isBuffer(p) ? p : Buffer.from(p, 'latin1'))); const h = Buffer.alloc(8); h.writeUInt32BE(8 + body.length); h.write(type, 4, 'latin1'); return Buffer.concat([h, body]); };
   const full = (type, version, flags, ...parts) => { const v = Buffer.alloc(4); v.writeUInt32BE(((version << 24) | flags) >>> 0); return box(type, v, ...parts); };
   const u32 = (...n) => { const b = Buffer.alloc(4 * n.length); n.forEach((x, i) => b.writeUInt32BE(x >>> 0, 4 * i)); return b; };
   const u16 = (...n) => { const b = Buffer.alloc(2 * n.length); n.forEach((x, i) => b.writeUInt16BE(x & 0xffff, 2 * i)); return b; };
+  const desc = (tag, body) => Buffer.concat([Buffer.from([tag, body.length]), body]);
   const MATRIX = u32(0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000);
-  const n = sizes.length, timescale = FPS * 1000, delta = 1000, mvDur = Math.round(n * 1000 / FPS);
+  const dinf = () => box('dinf', full('dref', 0, 0, u32(1), full('url ', 0, 1)));
+  const n = video.sizes.length, vDur = Math.round(n * 1000 / FPS);
+  const aDur = audio ? Math.round(audio.sizes.length * 1024 * 1000 / 48000) : 0;
   const ftyp = box('ftyp', 'isom', u32(512), 'isom', 'iso2', 'avc1', 'mp41');
-  const sync = keys.map((k, i) => k ? i + 1 : 0).filter(Boolean);
-  const moov = (offset) => box('moov',
-    full('mvhd', 0, 0, u32(0, 0, 1000, mvDur, 0x00010000), u16(0x0100, 0), Buffer.alloc(8), MATRIX, Buffer.alloc(24), u32(2)),
-    box('trak',
-      full('tkhd', 0, 3, u32(0, 0, 1, 0, mvDur), Buffer.alloc(8), u16(0, 0, 0, 0), MATRIX, u32(W * 65536, H * 65536)),
+  const sync = video.keys.map((k, i) => k ? i + 1 : 0).filter(Boolean);
+  const vTrak = (offset) => box('trak',
+    full('tkhd', 0, 3, u32(0, 0, 1, 0, vDur), Buffer.alloc(8), u16(0, 0, 0, 0), MATRIX, u32(W * 65536, H * 65536)),
+    box('mdia',
+      full('mdhd', 0, 0, u32(0, 0, FPS * 1000, n * 1000), u16(0x55c4, 0)),
+      full('hdlr', 0, 0, u32(0), 'vide', Buffer.alloc(12), 'VideoHandler\0'),
+      box('minf', full('vmhd', 0, 1, Buffer.alloc(8)), dinf(),
+        box('stbl',
+          full('stsd', 0, 0, u32(1), box('avc1', Buffer.alloc(6), u16(1), Buffer.alloc(16), u16(W, H), u32(0x00480000, 0x00480000, 0), u16(1), Buffer.alloc(32), u16(0x0018, 0xffff), box('avcC', video.avcC))),
+          full('stts', 0, 0, u32(1, n, 1000)),
+          full('stss', 0, 0, u32(sync.length, ...sync)),
+          full('stsc', 0, 0, u32(1, 1, n, 1)),
+          full('stsz', 0, 0, u32(0, n, ...video.sizes)),
+          full('stco', 0, 0, u32(1, offset))))));
+  const aTrak = (offset) => {
+    const m = audio.sizes.length;
+    const esds = full('esds', 0, 0, desc(0x03, Buffer.concat([u16(2), Buffer.from([0]),
+      desc(0x04, Buffer.concat([Buffer.from([0x40, 0x15, 0, 0, 0]), u32(192000, 192000), desc(0x05, audio.asc)])),
+      desc(0x06, Buffer.from([0x02]))])));
+    return box('trak',
+      full('tkhd', 0, 3, u32(0, 0, 2, 0, aDur), Buffer.alloc(8), u16(0, 0, 0x0100, 0), MATRIX, u32(0, 0)),
       box('mdia',
-        full('mdhd', 0, 0, u32(0, 0, timescale, n * delta), u16(0x55c4, 0)),
-        full('hdlr', 0, 0, u32(0), 'vide', Buffer.alloc(12), 'VideoHandler\0'),
-        box('minf',
-          full('vmhd', 0, 1, Buffer.alloc(8)),
-          box('dinf', full('dref', 0, 0, u32(1), full('url ', 0, 1))),
+        full('mdhd', 0, 0, u32(0, 0, 48000, m * 1024), u16(0x55c4, 0)),
+        full('hdlr', 0, 0, u32(0), 'soun', Buffer.alloc(12), 'SoundHandler\0'),
+        box('minf', full('smhd', 0, 0, u16(0, 0)), dinf(),
           box('stbl',
-            full('stsd', 0, 0, u32(1), box('avc1', Buffer.alloc(6), u16(1), Buffer.alloc(16), u16(W, H), u32(0x00480000, 0x00480000, 0), u16(1), Buffer.alloc(32), u16(0x0018, 0xffff), box('avcC', avcC))),
-            full('stts', 0, 0, u32(1, n, delta)),
-            full('stss', 0, 0, u32(sync.length, ...sync)),
-            full('stsc', 0, 0, u32(1, 1, n, 1)),
-            full('stsz', 0, 0, u32(0, n, ...sizes)),
-            full('stco', 0, 0, u32(1, offset)))))));
-  const total = sizes.reduce((a, b) => a + b, 0);
-  const head = moov(0).length + ftyp.length + 8;
-  const mdat = Buffer.alloc(8); mdat.writeUInt32BE(8 + total); mdat.write('mdat', 4, 'latin1');
-  return [ftyp, moov(head), mdat];
+            full('stsd', 0, 0, u32(1), box('mp4a', Buffer.alloc(6), u16(1), Buffer.alloc(8), u16(2, 16, 0, 0), u32(48000 * 65536), esds)),
+            full('stts', 0, 0, u32(1, m, 1024)),
+            full('stsc', 0, 0, u32(1, 1, m, 1)),
+            full('stsz', 0, 0, u32(0, m, ...audio.sizes)),
+            full('stco', 0, 0, u32(1, offset))))));
+  };
+  const vTotal = video.data.length, aTotal = audio ? audio.data.length : 0;
+  const moov = (vOff, aOff) => box('moov',
+    full('mvhd', 0, 0, u32(0, 0, 1000, Math.max(vDur, aDur), 0x00010000), u16(0x0100, 0), Buffer.alloc(8), MATRIX, Buffer.alloc(24), u32(audio ? 3 : 2)),
+    vTrak(vOff), ...(audio ? [aTrak(aOff)] : []));
+  const head = ftyp.length + moov(0, 0).length + 8;
+  const mdat = Buffer.alloc(8); mdat.writeUInt32BE(8 + vTotal + aTotal); mdat.write('mdat', 4, 'latin1');
+  return Buffer.concat([ftyp, moov(head, head + vTotal), mdat, video.data, ...(audio ? [audio.data] : [])]);
 }
