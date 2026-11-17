@@ -13,7 +13,7 @@ export function stamp() {
   for (const page of ['index.html', 'styles.css']) {
     const path = join(SITE, page);
     const before = readFileSync(path, 'utf8');
-    const after = before.replace(/(\/assets\/)([\w.-]+\.(?:webp|png|jpg|svg|ico))(\?v=[0-9a-f]+)?/g, (all, dir, name) => {
+    const after = before.replace(/(\/assets\/)([\w.-]+\.(?:webp|png|jpg|svg|ico|mp4))(\?v=[0-9a-f]+)?/g, (all, dir, name) => {
       const file = join(SITE, 'assets', name);
       if (!existsSync(file)) return all;
       return dir + name + '?v=' + createHash('sha1').update(readFileSync(file)).digest('hex').slice(0, 8);

@@ -37,7 +37,7 @@
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) { e.target.classList.add('seen'); io.unobserve(e.target); }
     }, { rootMargin: '0px 0px -8% 0px' });
-    $$('.loop-in, .how .cards3, .tour-copy, .tour-shot, .grid, .chip-in, .key-table, .install-in, .faq-in').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
+    $$('.pains, .film, .how .cards3, .tour-copy, .tour-shot, .grid, .chip-in, .key-table, .install-in, .faq-in').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
   }
 
   // A closer look: one large screenshot at a time, picked from the tabs (click or arrow keys).

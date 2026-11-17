@@ -2,6 +2,7 @@
 // from docs/video/chipmunk-launch-music.wav, made by tools/music.py) and chipmunk-launch-silent.mp4:
 //   node tools/video.mjs              full video
 //   node tools/video.mjs --music other.mp3   use another track (any format the browser can play)
+//   node tools/video.mjs --from 4 --to 22 --name clip-old-way   a short clip of part of it, with its music
 //   node tools/video.mjs --stills 3,12,22,28   a few frames as PNGs into release/, for a quick look
 // Each frame is drawn exactly with render(t), captured from the Edge or Chrome on this PC, encoded
 // to H.264 by the browser itself (WebCodecs), and packed into an MP4 here. No ffmpeg needed.
@@ -14,14 +15,17 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(ROOT, 'release', 'chipmunk-launch.mp4');
-const SILENT = join(ROOT, 'release', 'chipmunk-launch-silent.mp4');
+const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
+const NAME = arg('--name') || 'chipmunk-launch';
+const FROM = Number(arg('--from') || 0);
+const OUT = join(ROOT, 'release', NAME + '.mp4');
+const SILENT = join(ROOT, 'release', NAME + '-silent.mp4');
 const mi = process.argv.indexOf('--music');
 const MUSIC = mi > 0 ? resolve(process.argv[mi + 1]) : join(ROOT, 'docs', 'video', 'chipmunk-launch-music.wav');
 const FPS = 30, W = 1920, H = 1080, BITRATE = 12_000_000;
 const MIME = { '.wav': 'audio/wav', '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.mp4': 'video/mp4' };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const frames = join(tmpdir(), 'chipmunk-video-' + Date.now());
+const frames = arg('--frames') || join(tmpdir(), 'chipmunk-video-' + Date.now());
 await mkdir(frames, { recursive: true });
 let upload = null, uploadAudio = null;
 
@@ -29,12 +33,14 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (req.method === 'POST' && url.pathname === '/__upload') {
     const parts = []; for await (const c of req) parts.push(c);
-    upload = { meta: JSON.parse(decodeURIComponent(req.headers['x-meta'])), data: Buffer.concat(parts) };
+    const all = Buffer.concat(parts), n = all.readUInt32BE(0);
+    upload = { meta: JSON.parse(all.subarray(4, 4 + n).toString()), data: all.subarray(4 + n) };
     res.end('ok'); return;
   }
   if (req.method === 'POST' && url.pathname === '/__upload_audio') {
     const parts = []; for await (const c of req) parts.push(c);
-    uploadAudio = { meta: JSON.parse(decodeURIComponent(req.headers['x-meta'])), data: Buffer.concat(parts) };
+    const all = Buffer.concat(parts), n = all.readUInt32BE(0);
+    uploadAudio = { meta: JSON.parse(all.subarray(4, 4 + n).toString()), data: all.subarray(4 + n) };
     res.end('ok'); return;
   }
   if (url.pathname === '/__music') { res.writeHead(200, { 'Cache-Control': 'no-store' }); createReadStream(MUSIC).pipe(res); return; }
@@ -89,7 +95,7 @@ await cdp('Runtime.enable');
 await cdp('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 await open(`${BASE}/docs/video/launch.html`);
 await evaluate('window.ready');
-const duration = await evaluate('window.DURATION');
+const duration = (arg('--to') ? Number(arg('--to')) : await evaluate('window.DURATION')) - FROM;
 const draw = (t) => evaluate(`render(${t}), new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))`);
 
 if (process.argv[2] === '--stills') {
@@ -103,8 +109,8 @@ if (process.argv[2] === '--stills') {
 } else {
   // 1. every frame, exactly
   const n = Math.round(duration * FPS);
-  for (let i = 0; i < n; i++) {
-    await draw(i / FPS);
+  for (let i = 0; i < n && !arg('--frames'); i++) {
+    await draw(FROM + i / FPS);
     const r = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 95 });
     await writeFile(join(frames, String(i).padStart(5, '0') + '.jpg'), Buffer.from(r.data, 'base64'));
     if (i % 150 === 0) console.log(`frame ${i}/${n}`);
@@ -143,8 +149,9 @@ if (process.argv[2] === '--stills') {
     await enc.flush();
     if (err) throw err;
     let s = ''; for (const x of avcC) s += String.fromCharCode(x);
-    const meta = encodeURIComponent(JSON.stringify({ sizes, keys, avcC: btoa(s) }));
-    await fetch('/__upload', { method: 'POST', headers: { 'x-meta': meta }, body: new Blob(chunks) });
+    const meta = new TextEncoder().encode(JSON.stringify({ sizes, keys, avcC: btoa(s) })), len = new Uint8Array(4);
+    new DataView(len.buffer).setUint32(0, meta.length);
+    await fetch('/__upload', { method: 'POST', body: new Blob([len, meta, ...chunks]) });
     return true;
   })()`);
   if (!upload) throw new Error('No encoded video came back.');
@@ -159,9 +166,11 @@ if (process.argv[2] === '--stills') {
       const ctx = new OfflineAudioContext(2, Math.round(48000 * ${duration}), 48000);
       const src = ctx.createBufferSource();
       src.buffer = await ctx.decodeAudioData(await (await fetch('${musicUrl}')).arrayBuffer());
-      src.connect(ctx.destination); src.start();
+      src.connect(ctx.destination); src.start(0, ${FROM});
       const out = await ctx.startRendering();
       const L = out.getChannelData(0), R = out.getChannelData(1);
+      const F = Math.round(48000 * .35);   // a short fade at the end, so clips never cut off mid-note
+      for (let i = 0; i < F; i++) { const g = i / F, j = L.length - 1 - i; L[j] *= g; R[j] *= g; }
       const chunks = [], sizes = []; let asc = null, err = null;
       const enc = new AudioEncoder({
         output: (c, m) => {
@@ -179,7 +188,9 @@ if (process.argv[2] === '--stills') {
       await enc.flush();
       if (err) throw err;
       let s = ''; for (const x of (asc || [0x11, 0x90])) s += String.fromCharCode(x);
-      await fetch('/__upload_audio', { method: 'POST', headers: { 'x-meta': encodeURIComponent(JSON.stringify({ sizes, asc: btoa(s) })) }, body: new Blob(chunks) });
+      const meta = new TextEncoder().encode(JSON.stringify({ sizes, asc: btoa(s) })), len = new Uint8Array(4);
+      new DataView(len.buffer).setUint32(0, meta.length);
+      await fetch('/__upload_audio', { method: 'POST', body: new Blob([len, meta, ...chunks]) });
       return true;
     })()`);
     if (ok && uploadAudio) audio = { sizes: uploadAudio.meta.sizes, asc: Buffer.from(uploadAudio.meta.asc, 'base64'), data: uploadAudio.data };
@@ -210,7 +221,7 @@ if (process.argv[2] === '--stills') {
 
 ws.close(); browser.kill(); server.close();
 await sleep(500);
-await rm(frames, { recursive: true, force: true }).catch(() => {});
+if (!arg('--frames')) await rm(frames, { recursive: true, force: true }).catch(() => {});
 await rm(profile, { recursive: true, force: true }).catch(() => {});
 
 function mp4({ video, audio }) {

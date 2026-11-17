@@ -6,8 +6,9 @@
 
 <p align="center">
   <b>Give your AI the whole picture.</b><br>
-  Collect screenshots, files and notes as you work on your computer, then paste them all into<br>
-  ChatGPT, Claude, Claude Code, Codex or Cursor at once. Numbered, with a note on each, so your AI knows exactly what you mean.
+  Collect screenshots, files and notes as you work. Every prompt gets its own draft, saved as you type.<br>
+  Then send it all to ChatGPT, Claude, Claude Code or Codex in one click, numbered, with a note on each.<br>
+  <a href="https://chipmunk.bsid.dev/#video">Watch the 1-minute video</a>
 </p>
 
 <p align="center">
@@ -37,9 +38,10 @@ Giving an AI the full picture is still copy-paste chaos:
 - You attach screenshots one by one, switching windows each time.
 - In **Claude Code, Codex or Cursor on Windows**, pasting images is a coin flip: Ctrl+V or Alt+V, only one of several images attaching, images in the wrong order.
 - The model can't tell your screenshots apart, so "the second one" gets misread.
-- A long prompt is one refresh away from gone.
+- A long prompt is one refresh away from gone, and a half-written one has nowhere to live while you do something else.
+- Asking a second AI means copying the text and uploading every image again.
 
-**Chipmunk fixes all four.** It collects everything into one draft while you work, numbers it, and pastes it into the AI you're using, in order, in one go.
+**Chipmunk fixes all of it.** It collects everything into one draft while you work, numbers it, keeps it saved as you type, and pastes it into whichever AI you pick, in order, in one go. Send the same draft to Claude Code, then ChatGPT, with one click each.
 
 ## How it works
 

@@ -14,7 +14,7 @@ Chipmunk is a free, open-source app for Windows, with a Mac beta (by Siddharth, 
 
 - Product quality bar: feels like a top YC startup. Premium, calm, clean, intuitive for non-programmers. Fast and light (idle CPU near zero). Nothing that feels "old school" or cluttered. Every feature must earn its place; cut what doesn't help most people.
 - Look: warm paper palette (bg #f7f6f2, ink #1d1b18, accent #b5602a), serif display headings (Sitka in the app, Instrument Serif on the site), rounded corners, soft shadows, light and dark themes. Chip the chipmunk mascot is the brand; keep it helpful, never annoying, always optional.
-- Pitch: headline "Give your AI the whole picture.", example "Fix my bakery's website" (see docs/PRODUCT.md, "How we pitch it"). Examples must be things people really do, on a desktop, that anyone understands.
+- Pitch: headline "Give your AI the whole picture.", example "Fix my bakery's website" (see docs/PRODUCT.md, "How we pitch it"). Lead with three pains: the AI can't see your screen; half-written prompts have no home; one prompt, many AIs means re-uploading everything. docs/LAUNCH.md has the posts. Examples must be things people really do, on a desktop, that anyone understands.
 - Explanations: plain language, specific steps, like talking to a non-programmer. Concise and structured.
 - Git: commit messages are short, plain and human. Never add a Co-Authored-By line or any mention of AI. Don't push to the user's other repos without saying so first.
 - Ship to the end: build, test it really works, then release and deploy. Publish GitHub releases only when the user approves that release.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Chipmunk: give your AI the whole picture</title>
-<meta name="description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, then paste them all into ChatGPT, Claude, Claude Code, Codex or Cursor at once, numbered, with a note on each.">
+<meta name="description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, keep every prompt safe in its own draft, and send it all to ChatGPT, Claude, Claude Code or Codex in one click.">
 <meta name="theme-color" content="#f7f6f2">
 <link rel="canonical" href="https://chipmunk.bsid.dev/">
 <link rel="icon" href="/assets/icon-64.png?v=cb21e7ff" type="image/png">
@@ -12,13 +12,13 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://chipmunk.bsid.dev/">
 <meta property="og:title" content="Chipmunk: give your AI the whole picture">
-<meta property="og:description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, then paste them all into ChatGPT, Claude, Claude Code, Codex or Cursor at once, numbered, with a note on each.">
+<meta property="og:description" content="Free app for Windows and Mac. Collect screenshots, files and notes as you work, keep every prompt safe in its own draft, and send it all to ChatGPT, Claude, Claude Code or Codex in one click.">
 <meta property="og:image" content="https://chipmunk.bsid.dev/assets/og.png?v=15ef139a">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1260">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Chipmunk: give your AI the whole picture">
-<meta name="twitter:description" content="Collect screenshots, files and notes as you work. Paste them all into your AI at once. Free for Windows and Mac.">
+<meta name="twitter:description" content="Collect screenshots and notes as you work, keep every prompt in its own draft, and send it to any AI in one click. Free for Windows and Mac.">
 <meta name="twitter:image" content="https://chipmunk.bsid.dev/assets/og.png?v=15ef139a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,13 +47,13 @@
     <div class="wrap hero-in">
       <p class="eyebrow"><span class="dot"></span>Free for Windows &amp; Mac · Open source</p>
       <h1>Give your AI<br><em>the whole picture.</em></h1>
-      <p class="lede">Collect screenshots, files and notes as you work on your computer, then paste them all into ChatGPT, Claude, Claude Code, Codex or Cursor at once. Numbered, with a note on each, so your AI knows exactly what you mean.</p>
+      <p class="lede">Collect screenshots, files and notes as you work. Every prompt gets its own draft, saved as you type. Then send it all to ChatGPT, Claude, Claude Code or Codex in one click, numbered, with a note on each.</p>
       <div class="cta">
         <a class="btn btn-ink btn-lg" href="/download" data-download>
           <svg class="winlogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.3l7.4-1v7.2H3V5.3zm8.3-1.2L21 2.8v8.7h-9.7V4.1zM3 12.5h7.4v7.2L3 18.7v-6.2zm8.3 0H21v8.7l-9.7-1.3v-7.4z"/></svg>
           Download for Windows
         </a>
-        <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+        <a class="btn btn-ghost btn-lg" href="#video"><svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Watch the 1-minute video</a>
       </div>
       <p class="fine" data-platform-note>Windows 10 and 11 · 0.5 MB · installs in seconds, no admin needed</p>
     </div>
@@ -106,29 +106,42 @@
   </section>
 
   <!-- before / after -->
-  <section class="loop">
-    <div class="wrap loop-in">
-      <div>
-        <h2>The loop it kills</h2>
-        <p class="sub">Your AI can't see your screen. So whenever it needs to, for a page that looks wrong, an error, or a design you love, it's screenshot, switch, paste, explain, switch back, again and again, while your prompt waits in a chat box that can reset. Then the AI mixes up which screenshot you meant. Coding tools are worse: on Windows, pasting several screenshots into Claude Code, Codex or Cursor often attaches only one, or scrambles the order. Chipmunk pastes every one, in order, with your notes, every time.</p>
+  <section class="video" id="video">
+    <div class="wrap">
+      <figure class="film">
+        <video controls playsinline preload="none" poster="/assets/launch-poster.jpg?v=9f8504ea" width="1920" height="1080">
+          <source src="/assets/chipmunk-launch.mp4?v=0a046cab" type="video/mp4">
+        </video>
+      </figure>
+    </div>
+  </section>
+
+  <!-- the three problems -->
+  <section class="loop" id="why">
+    <div class="wrap">
+      <p class="kicker">Why Chipmunk</p>
+      <h2>Three things that slow down every AI chat.</h2>
+      <div class="pains">
+        <article class="pain">
+          <span class="pnum">1</span>
+          <h3>Your AI can&rsquo;t see your screen.</h3>
+          <p class="was">So you screenshot, switch, paste, explain and switch back, for every screenshot. Then the AI mixes up which one you meant.</p>
+          <p class="now"><b>With Chipmunk</b> you screenshot as you work. Each one lands in your draft, numbered, with a note saying what to look at.</p>
+        </article>
+        <article class="pain">
+          <span class="pnum">2</span>
+          <h3>Half-written prompts have no home.</h3>
+          <p class="was">A chat box that resets. A notes app that can&rsquo;t hold your screenshots. A message to yourself you never find again.</p>
+          <p class="now"><b>With Chipmunk</b> every prompt gets its own draft, saved as you type, with its screenshots and files. Switch to something else and come back any time.</p>
+        </article>
+        <article class="pain">
+          <span class="pnum">3</span>
+          <h3>One prompt, many AIs.</h3>
+          <p class="was">A second opinion from ChatGPT, or the same fix in Claude Code, means copying the text and uploading every image again.</p>
+          <p class="now"><b>With Chipmunk</b> you send the same draft to Claude Code, ChatGPT, Claude or Codex, in the app or the browser. One click each.</p>
+        </article>
       </div>
-      <div class="compare">
-        <div class="col before">
-          <h3>Without Chipmunk</h3>
-          <ol>
-            <li>Screenshot</li><li>Switch to the chat</li><li>Paste</li><li>Switch back</li><li>Screenshot again</li><li>Switch, paste, switch…</li><li>Type the prompt in a tiny box</li><li>Hope the tab doesn't reload</li>
-          </ol>
-        </div>
-        <div class="col after">
-          <h3>With Chipmunk</h3>
-          <ol>
-            <li>Screenshot as usual. Each one lands in your draft, numbered.</li>
-            <li>Say what matters: add a note to an image, or write "in image 2…" in your prompt.</li>
-            <li>Click <b>Send</b>. Everything pastes in, in one go.</li>
-          </ol>
-          <p class="note">About 15 seconds instead of two minutes, and you never leave what you're doing.</p>
-        </div>
-      </div>
+      <p class="pains-note">On Windows, pasting several screenshots into Claude Code, Codex or Cursor often attaches only one or scrambles the order. Chipmunk pastes every one, in order, every time.</p>
     </div>
   </section>
 

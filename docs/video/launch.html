@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Chipmunk launch video: 30 s at 1920x1080. render(t) draws any moment exactly, so tools/video.mjs
+<!-- Chipmunk launch video: 54 s at 1920x1080. render(t) draws any moment exactly, so tools/video.mjs
      can step through it frame by frame and encode a perfectly smooth MP4. Every cut lands on a
      120 BPM grid (every 0.5 s), so any 120 BPM track lines up. The demo windows are the live
      scenes from docs/shots/scenes.html, so the video always matches the website. -->
@@ -102,6 +102,63 @@
   .wfix { position: absolute; }
   .fixed-pill { position: absolute; right: 22px; bottom: 22px; background: #2f7a4f; color: #fff; font: 600 22px Inter, sans-serif; padding: 9px 20px 10px; border-radius: 999px; box-shadow: 0 10px 24px -10px rgba(20, 70, 40, .7); opacity: 0; z-index: 3; }
 
+  /* where does a half-written prompt go */
+  .where { font-size: 104px; line-height: 1.05; }
+  .notif { position: absolute; right: 140px; top: 120px; width: 560px; background: #fff; border-radius: 20px; padding: 22px 26px; box-shadow: 0 30px 70px -24px rgba(40, 25, 10, .45), 0 0 0 1px rgba(0, 0, 0, .05); font-size: 24px; line-height: 1.35; display: flex; gap: 18px; }
+  .notif i { width: 52px; height: 52px; border-radius: 14px; background: #4a7fc1; flex: none; display: grid; place-items: center; color: #fff; font: 700 24px Inter, sans-serif; font-style: normal; }
+  .notif b { display: block; font-size: 22px; } .notif small { display: block; color: #8f8a81; font-size: 18px; margin-top: 4px; }
+  .opts { position: absolute; left: 0; right: 0; top: 590px; display: flex; justify-content: center; gap: 30px; }
+  .opt { width: 380px; background: #fff; border-radius: 20px; padding: 26px 28px; box-shadow: 0 24px 60px -26px rgba(40, 25, 10, .45), 0 0 0 1px rgba(0, 0, 0, .05); opacity: 0; }
+  .opt b { display: block; font-size: 26px; margin-bottom: 10px; }
+  .opt span { display: block; font-size: 20px; color: #8f8a81; line-height: 1.4; }
+  .opt .x { float: right; color: #c0392b; font-weight: 700; font-size: 26px; opacity: 0; }
+
+  /* every prompt gets its own draft */
+  .dpanel { left: 610px; top: 220px; height: 680px; }
+  .dpanel .p-head b { font-size: 38px; }
+  .p-new { margin-left: auto; font-size: 20px; color: #57534b; border: 1px solid #e6e2d9; border-radius: 12px; padding: 6px 14px; background: #fff; }
+  .dgroup { margin: 26px 4px 10px; font-size: 17px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8f8a81; }
+  .ditem { display: flex; align-items: center; gap: 18px; padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid #e6e2d9; margin-bottom: 10px; }
+  .ditem.hot { border-color: #b5602a; box-shadow: 0 0 0 4px #f6e8da; }
+  .ditem b { display: block; font-size: 24px; font-weight: 600; }
+  .ditem small { display: block; font-size: 18px; color: #8f8a81; margin-top: 2px; }
+  .dth { width: 86px; height: 56px; border-radius: 10px; overflow: hidden; position: relative; flex: none; background: #efede7; }
+  .dth.file { display: grid; place-items: center; font: 700 16px Inter, sans-serif; color: #2f7a4f; background: #e5f2ea; }
+  .dth.text { background: linear-gradient(#efede7 0 0) 14px 16px / 50px 5px no-repeat, linear-gradient(#efede7 0 0) 14px 28px / 40px 5px no-repeat, #fff; box-shadow: inset 0 0 0 1px #e6e2d9; }
+  .dview .p-editor { height: 300px; }
+  .chipfile { display: inline-flex; align-items: center; gap: 12px; margin-top: 22px; padding: 12px 18px; border: 1px solid #e6e2d9; border-radius: 14px; background: #fff; font-size: 21px; }
+  .chipfile i { width: 40px; height: 40px; border-radius: 10px; background: #e5f2ea; color: #2f7a4f; display: grid; place-items: center; font: 700 13px Inter, sans-serif; font-style: normal; }
+
+  /* one draft, every AI */
+  .mdraft { position: absolute; left: 90px; top: 220px; width: 540px; background: #fbfaf8; border: 1px solid #e6e2d9; border-radius: 22px; padding: 22px 24px; box-shadow: 0 30px 70px -28px rgba(60, 38, 18, .4); }
+  .mdraft b { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 34px; }
+  .mthumbs { display: flex; gap: 10px; margin: 16px 0 12px; }
+  .mthumbs span { width: 150px; height: 94px; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 0 0 1px #e6e2d9; }
+  .mdraft p { margin: 0; font-size: 21px; line-height: 1.4; color: #57534b; }
+  .smenu { position: absolute; left: 90px; top: 548px; width: 540px; background: #fff; border: 1px solid #e6e2d9; border-radius: 20px; padding: 10px; box-shadow: 0 30px 70px -28px rgba(60, 38, 18, .4); }
+  .srow { display: flex; align-items: center; gap: 16px; padding: 12px 14px; border-radius: 14px; font-size: 23px; }
+  .srow i { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; font: 700 18px Inter, sans-serif; font-style: normal; flex: none; }
+  .srow b { display: block; font-weight: 600; } .srow small { display: block; font-size: 17px; color: #8f8a81; }
+  .srow.on { background: #f6e8da; }
+  .srow .ok { margin-left: auto; color: #2f7a4f; font-weight: 700; font-size: 20px; opacity: 0; }
+  .tgt { position: absolute; background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 34px 80px -28px rgba(40, 25, 10, .45), 0 0 0 1px rgba(0, 0, 0, .06); }
+  .tgt.dark { background: #1c1b19; color: #ebe7df; }
+  .tgt .tb2 { height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 18px; color: #8f8a81; background: #efede7; }
+  .tgt.dark .tb2 { background: #252320; }
+  .tgt .tb2 i { width: 12px; height: 12px; border-radius: 50%; background: #d8d3c8; display: block; } .tgt.dark .tb2 i { background: #3a3733; }
+  .tgt .tb2 span { margin-left: 10px; }
+  .tgt .tin { padding: 20px 22px; }
+  .rx { opacity: 0; }
+  .rx .rth { display: flex; gap: 8px; margin-bottom: 10px; }
+  .rx .rth span { width: 96px; height: 60px; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1); }
+  .rx p { margin: 0; font-size: 19px; line-height: 1.4; }
+  .tgt.dark .rx p { font: 18px/1.55 "Cascadia Mono", Consolas, monospace; }
+  .rx .img { color: #e9b07c; }
+  .bubr { margin-left: auto; max-width: 92%; background: #efede7; border-radius: 16px; padding: 12px 14px; }
+  .sentpill { position: absolute; right: 16px; bottom: 16px; background: #2f7a4f; color: #fff; font: 600 18px Inter, sans-serif; padding: 7px 16px 8px; border-radius: 999px; opacity: 0; }
+  .flier { position: absolute; left: 0; top: 0; width: 320px; background: #fbfaf8; border: 1px solid #e6e2d9; border-radius: 16px; padding: 12px; box-shadow: 0 20px 40px -16px rgba(60, 38, 18, .5); display: none; }
+  .flier .mthumbs { margin: 0; } .flier .mthumbs span { width: 92px; height: 58px; }
+
   /* 6 end card */
   .tag { font-size: 176px; line-height: .98; top: 300px; transform-origin: 50% 0; }
   .brand { position: absolute; left: 0; right: 0; top: 560px; display: flex; justify-content: center; align-items: center; gap: 24px; font-size: 60px; font-weight: 700; letter-spacing: -.02em; }
@@ -133,6 +190,17 @@
       <div id="dflash"></div>
       <div class="alttab" id="alttab"><div class="at-row"><div class="at-item" id="atB"><div class="at-th" id="atBth"></div>Browser</div><div class="at-item" id="atC"><div class="at-th chat-th"></div>Your AI</div></div><div class="at-key">Alt + Tab</div></div>
       <div class="taskbar"><i class="tb b1"></i><i class="tb b2" id="tbB"></i><i class="tb b3" id="tbC"></i><i class="tb b4"></i></div>
+    </div>
+  </section>
+
+  <section class="layer" id="sw">
+    <div class="notif" id="notif"><i>P</i><div><b>Priya</b>Can you look at the Q4 report before 5?<small>now</small></div></div>
+    <h1 class="line where serif" id="where1" style="top: 420px">Then something else comes up.</h1>
+    <h1 class="line where serif" id="where2" style="top: 330px">Where does your half-written <em>prompt go?</em></h1>
+    <div class="opts">
+      <div class="opt" id="opt0"><span class="x">&#10005;</span><b>A notes app</b><span>Your screenshots don&rsquo;t come with it.</span></div>
+      <div class="opt" id="opt1"><span class="x">&#10005;</span><b>A message to yourself</b><span>Buried by tomorrow.</span></div>
+      <div class="opt" id="opt2"><span class="x">&#10005;</span><b>Tab 37 of 52</b><span>Until it reloads.</span></div>
     </div>
   </section>
 
@@ -180,6 +248,46 @@
     <h2 class="cap serif" id="c4">Fixed in one go.</h2>
   </section>
 
+  <section class="layer" id="s7">
+    <h2 class="cap serif" id="c5">Every prompt gets <em>its own draft.</em></h2>
+    <h2 class="cap serif" id="c6">Saved as you type. Nothing gets lost.</h2>
+    <div class="panel dpanel" id="dlist">
+      <div class="p-head"><b>Drafts</b><span class="p-new">+ New draft</span></div>
+      <div class="dgroup">In progress</div>
+      <div class="ditem" id="di0"><span class="dth" id="dth0"></span><div><b>Fix my bakery&rsquo;s website</b><small>3 images &middot; saved just now</small></div></div>
+      <div class="ditem" id="di1"><span class="dth file">XLSX</span><div><b>Q4 report summary for Priya</b><small>1 file &middot; saved 2 min ago</small></div></div>
+      <div class="ditem" id="di2"><span class="dth text"></span><div><b>Wedding speech, second draft</b><small>saved yesterday</small></div></div>
+      <div class="ditem" id="di3"><span class="dth" id="dth3"></span><div><b>Ideas for the reviews page</b><small>2 images &middot; saved Monday</small></div></div>
+      <div class="dgroup">Sent</div>
+      <div class="ditem" id="di4"><span class="dth text"></span><div><b>Holiday opening hours post</b><small>sent to ChatGPT &middot; last week</small></div></div>
+    </div>
+    <svg class="cursor" id="cursor7" viewBox="0 0 24 24" style="z-index:5"><path d="M4 2l16 9-7 2-3 7z" fill="#1d1b18" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <div class="panel dpanel dview" id="dview">
+      <div class="p-head"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><b>Q4 report summary for Priya</b><span class="p-saved">Saved 2 min ago</span></div>
+      <div class="p-editor">Summarise the attached Q4 sales report in five bullets for Priya. Flag anything that dropped more than 10%, and keep it under 150 words.</div>
+      <div><span class="chipfile"><i>XLSX</i>Q4-sales.xlsx</span></div>
+    </div>
+  </section>
+
+  <section class="layer" id="s8">
+    <h2 class="cap serif" id="c7">One draft. <em>Every AI.</em></h2>
+    <h2 class="cap serif" id="c8">App or browser. One click each.</h2>
+    <div class="mdraft"><b>Fix my bakery&rsquo;s website</b><div class="mthumbs"><span class="mt0"></span><span class="mt1"></span><span class="mt2"></span></div><p>Fix these three things on my bakery&rsquo;s website. Keep everything else the same.</p></div>
+    <div class="smenu">
+      <div class="srow" id="sr0"><i style="background:#3a3733">&gt;_</i><div><b>Claude Code</b><small>Terminal &middot; bakery-site</small></div><span class="ok">&#10003; Sent</span></div>
+      <div class="srow" id="sr1"><i style="background:#1d1b18">G</i><div><b>ChatGPT</b><small>Desktop app</small></div><span class="ok">&#10003; Sent</span></div>
+      <div class="srow" id="sr2"><i style="background:#c8784a">C</i><div><b>Claude</b><small>claude.ai &middot; Chrome</small></div><span class="ok">&#10003; Sent</span></div>
+      <div class="srow" id="sr3"><i style="background:#57534b">X</i><div><b>Codex</b><small>Desktop app</small></div></div>
+    </div>
+    <div class="tgt dark" id="tg0" style="left:700px;top:220px;width:560px;height:330px"><div class="tb2"><i></i><i></i><i></i><span>Claude Code &middot; bakery-site</span></div><div class="tin rx" id="rx0"><p><span class="img">[Image #1] [Image #2] [Image #3]</span><br>&gt; Fix these three things on my bakery&rsquo;s website. Keep everything else the same.</p></div><div class="sentpill" id="sp0">&#10003; Sent</div></div>
+    <div class="tgt" id="tg1" style="left:1290px;top:220px;width:540px;height:330px"><div class="tb2"><i></i><i></i><i></i><span>ChatGPT</span></div><div class="tin"><div class="rx bubr" id="rx1"><div class="rth"><span class="mt0"></span><span class="mt1"></span><span class="mt2"></span></div><p>Fix these three things on my bakery&rsquo;s website. Keep everything else the same.</p></div></div><div class="sentpill" id="sp1">&#10003; Sent</div></div>
+    <div class="tgt" id="tg2" style="left:960px;top:590px;width:640px;height:370px"><div class="tb2"><i></i><i></i><i></i><span>claude.ai</span></div><div class="tin"><div class="rx bubr" id="rx2"><div class="rth"><span class="mt0"></span><span class="mt1"></span><span class="mt2"></span></div><p>Fix these three things on my bakery&rsquo;s website. Keep everything else the same.</p></div></div><div class="sentpill" id="sp2">&#10003; Sent</div></div>
+    <div class="flier" id="fl0"><div class="mthumbs"><span class="mt0"></span><span class="mt1"></span><span class="mt2"></span></div></div>
+    <div class="flier" id="fl1"><div class="mthumbs"><span class="mt0"></span><span class="mt1"></span><span class="mt2"></span></div></div>
+    <div class="flier" id="fl2"><div class="mthumbs"><span class="mt0"></span><span class="mt1"></span><span class="mt2"></span></div></div>
+    <svg class="cursor" id="cursor8" viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 7z" fill="#1d1b18" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+  </section>
+
   <section class="layer" id="s6">
     <h1 class="line tag serif" id="tag">Give your AI<br><em>the whole picture.</em></h1>
     <div class="brand" id="brand"><img src="../../site/assets/icon-256.png" alt="">Chipmunk</div>
@@ -188,7 +296,7 @@
   </section>
 
 <script>
-const DURATION = 30;
+const DURATION = 54;
 const $ = (id) => document.getElementById(id);
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const prog = (t, a, b) => clamp((t - a) / (b - a));
@@ -259,6 +367,9 @@ const ready = (async () => {
   el.hook1 = words($('hook1')); el.hook2 = words($('hook2'));
   el.meet = words($('meet')); el.tag = words($('tag'));
 
+  ['mt0', 'mt1', 'mt2'].forEach((c, i) => document.querySelectorAll('.' + c).forEach((sp) => sp.append(scene(SHOTS[i], sp.offsetWidth ? sp.offsetWidth / 1200 : (sp.closest('.flier') ? 92 : sp.closest('.rth') ? 96 : 150) / 1200))));
+  $('dth0').append(scene('home', 86 / 1200)); $('dth3').append(scene('reviews', 86 / 1200));
+  el.where1 = words($('where1')); el.where2 = words($('where2'));
   el.dHome = scene('home', .78); el.dOrder = scene('order', .78);
   $('dBrowser').append(el.dHome, el.dOrder);
   $('att0').append(scene('home', 104 / 1200)); $('att1').append(scene('order', 104 / 1200));
@@ -300,40 +411,41 @@ function caption(ids, times, t) {
   });
 }
 
-function render(t) {
-  // 1. Hook: 0 - 3 s
-  const s1 = t < 3; show($('s1'), s1);
+function render(T) {
+  let t = T;
+  // 1. Hook: 0 - 4 s
+  const s1 = t < 4; show($('s1'), s1);
   if (s1) {
     rise(el.hook1, t, .15);
-    $('hook1').style.opacity = 1 - prog(t, 1.3, 1.55);
-    $('hook1').style.transform = `translateY(${-prog(t, 1.3, 1.55) * 30}px)`;
-    rise(el.hook2, t, 1.6, .08);
-    const o = prog(t, 2.72, 2.98);
+    $('hook1').style.opacity = 1 - prog(t, 1.75, 2.0);
+    $('hook1').style.transform = `translateY(${-prog(t, 1.75, 2.0) * 30}px)`;
+    rise(el.hook2, t, 2.05, .08);
+    const o = prog(t, 3.7, 3.98);
     $('hook2').style.opacity = 1 - o;
     $('hook2').style.transform = `scale(${1 + o * .06})`;
   }
 
-  // 2. The loop, as it looks on your own laptop: 3 - 7.5 s, one step per beat
-  const s2 = t >= 3 && t < 7.5; show($('s2'), s2);
+  // 2. The old way, on your own laptop: 4 - 16 s, slow enough to follow
+  const s2 = t >= 4 && t < 16; show($('s2'), s2);
   if (s2) {
-    const k = Math.min(LOOP.length - 1, Math.floor((t - 3) / .5));
+    const STEPS = [[4, 'You screenshot the problem.'], [5.5, 'Switch to your AI.'], [7, 'Paste it in.'], [8, 'Explain what you mean.'], [9.5, 'Switch back. Screenshot the next thing.'], [11.5, 'Switch. Paste. Explain. Again.'], [13.5, 'Then the tab reloads\u2026'], [14.6, '\u2026and your prompt is gone.']];
+    let k = 0; STEPS.forEach(([a], i) => { if (t >= a) k = i; });
     const word = $('word');
-    word.textContent = LOOP[k];
-    const pop = out3(prog(t, 3 + k * .5, 3 + k * .5 + .16));
-    const leave = prog(t, 7.38, 7.5);
-    word.style.opacity = out3(prog(t, 3, 3.12)) * (1 - leave);
-    word.style.transform = `translate(-50%, -50%) scale(${1.1 - .1 * pop})`;
-    const inn = out3(prog(t, 3, 3.25));
+    word.textContent = STEPS[k][1];
+    const pop = out3(prog(t, STEPS[k][0], STEPS[k][0] + .2));
+    const leave = prog(t, 15.7, 16);
+    word.style.opacity = out3(prog(t, 4, 4.15)) * (1 - leave);
+    word.style.transform = `translate(-50%, -50%) scale(${1.06 - .06 * pop})`;
+    const inn = out3(prog(t, 4, 4.3));
     $('screen').style.opacity = inn * (1 - leave);
     $('screen').style.transform = `translateY(${(1 - inn) * 40}px)`;
     document.querySelector('#s2 .lapbase').style.opacity = inn * (1 - leave);
 
-    // which window is in front: browser, chat (3.8), browser (5.3), chat (6.3)
-    const SW = [[3.5, 3.8, 'chat'], [5.0, 5.3, 'browser'], [6.0, 6.3, 'chat']];
-    let front = 'browser', since = 3;
+    const SW = [[5.6, 6.5, 'chat'], [9.6, 10.3, 'browser'], [11.6, 12.2, 'chat']];
+    let front = 'browser', since = 4;
     SW.forEach(([a, b, w]) => { if (t >= b) { front = w; since = b; } });
-    const lift = out3(prog(t, since, since + .16));
-    const fb = front === 'browser', order = t >= 5.3;
+    const lift = out3(prog(t, since, since + .2));
+    const fb = front === 'browser', order = t >= 10.3;
     $('dBrowser').style.zIndex = fb ? 2 : 1; $('dChat').style.zIndex = fb ? 1 : 2;
     $('dBrowser').style.transform = `scale(${fb ? .975 + .025 * lift : 1})`;
     $('dChat').style.transform = `scale(${fb ? 1 : .975 + .025 * lift})`;
@@ -342,42 +454,58 @@ function render(t) {
     el.dHome.style.opacity = order ? 0 : 1; el.dOrder.style.opacity = order ? 1 : 0;
     $('tbB').classList.toggle('on', fb); $('tbC').classList.toggle('on', !fb);
 
-    // the Alt+Tab switcher, exactly like on your computer
     const sw = SW.find(([a, b]) => t >= a && t < b);
     $('alttab').style.display = sw ? 'block' : 'none';
     if (sw) {
-      const toChat = sw[2] === 'chat', moved = t >= sw[0] + .12;
+      const toChat = sw[2] === 'chat', moved = t >= sw[0] + .32;
       $('atB').classList.toggle('on', toChat ? !moved : moved);
       $('atC').classList.toggle('on', toChat ? moved : !moved);
-      el.atHome.style.opacity = t >= 5.3 ? 0 : 1; el.atOrder.style.opacity = t >= 5.3 ? 1 : 0;
-      $('alttab').style.opacity = out3(prog(t, sw[0], sw[0] + .06));
+      el.atHome.style.opacity = t >= 9.6 ? 0 : 1; el.atOrder.style.opacity = t >= 9.6 ? 1 : 0;
+      $('alttab').style.opacity = out3(prog(t, sw[0], sw[0] + .1)) * (1 - prog(t, sw[1] - .08, sw[1]));
     }
 
-    // screenshots of the browser: an outline traces the window, then a flash
     let mOn = 0, flash = 0;
-    [3.05, 5.55].forEach((a) => {
-      if (t >= a && t < a + .42) mOn = prog(t, a, a + .25);
-      if (t >= a + .26) flash = Math.max(flash, .75 * (1 - prog(t, a + .3, a + .45)) * prog(t, a + .26, a + .3));
+    [4.35, 10.55].forEach((a) => {
+      if (t >= a && t < a + .8) mOn = out3(prog(t, a, a + .5));
+      if (t >= a + .55) flash = Math.max(flash, .75 * (1 - prog(t, a + .6, a + .8)) * prog(t, a + .55, a + .6));
     });
     const per = 931 * 2 + 580 * 2;
     $('dmrect').style.strokeDasharray = per; $('dmrect').style.strokeDashoffset = per * (1 - mOn);
     $('dmarq').style.opacity = mOn > 0 ? 1 : 0; $('dflash').style.opacity = flash;
 
-    // paste into the chat, explain, then the tab reloads and it's all gone
-    const gone = t >= 7.12;
-    [[4.05, 'att0'], [6.55, 'att1']].forEach(([a, id]) => {
-      const x = back(prog(t, a, a + .2));
-      $(id).style.opacity = gone ? 0 : prog(t, a, a + .05);
+    const gone = t >= 13.95;
+    [[7.25, 'att0'], [12.35, 'att1']].forEach(([a, id]) => {
+      const x = back(prog(t, a, a + .25));
+      $(id).style.opacity = gone ? 0 : prog(t, a, a + .06);
       $(id).style.transform = `scale(${.6 + .4 * x})`;
     });
-    const n1 = Math.round(TYPE1.length * prog(t, 4.5, 4.95)), n2 = Math.round(TYPE2.length * prog(t, 6.62, 6.98));
+    const n1 = Math.round(TYPE1.length * prog(t, 8.15, 9.3)), n2 = Math.round(TYPE2.length * prog(t, 12.55, 13.45));
     $('ctext').textContent = gone ? '' : TYPE1.slice(0, n1) + TYPE2.slice(0, n2);
     $('ccaret').style.opacity = !fb && Math.floor(t * 3) % 2 === 0 ? 1 : 0;
-    const rl = t >= 7.02 && t < 7.3;
-    $('reload').style.opacity = rl ? 1 : 0;
+    $('reload').style.opacity = t >= 13.9 && t < 14.5 ? 1 : 0;
     $('spin').style.transform = `rotate(${t * 720}deg)`;
   }
 
+  // 2b. Where does a half-written prompt go? 16 - 20 s
+  const sw2 = t >= 16 && t < 20; show($('sw'), sw2);
+  if (sw2) {
+    const n = out3(prog(t, 16.15, 16.5)), nOut = prog(t, 17.25, 17.45);
+    $('notif').style.opacity = n * (1 - nOut);
+    $('notif').style.transform = `translateX(${(1 - n) * 80}px)`;
+    rise(el.where1, t, 16.25, .07);
+    $('where1').style.opacity = 1 - prog(t, 17.2, 17.4);
+    rise(el.where2, t, 17.45, .07);
+    [17.95, 18.35, 18.75].forEach((a, i) => {
+      const x = out3(prog(t, a, a + .3)), o = $('opt' + i);
+      o.style.opacity = x;
+      o.style.transform = `translateY(${(1 - x) * 40}px) rotate(${(i - 1) * 1.5}deg)`;
+      o.querySelector('.x').style.opacity = prog(t, a + .45, a + .55);
+    });
+    const leave = prog(t, 19.6, 19.95);
+    $('sw').style.opacity = 1 - leave;
+  }
+
+  t = T - 12.5;   // the scenes below keep their original timings, 12.5 s later
   // 3. Meet Chipmunk: 7.5 - 9.5 s
   const s3 = t >= 7.5 && t < 9.5; show($('s3'), s3);
   if (s3) {
@@ -476,6 +604,55 @@ function render(t) {
     $('pillB').style.opacity = prog(t, 23.0, 23.1); $('pillB').style.transform = `scale(${.6 + .4 * pb})`;
   }
 
+  t = T;
+  // 7. Every prompt gets its own draft: 36.5 - 42 s
+  const s7 = t >= 36.5 && t < 42; show($('s7'), s7);
+  if (s7) {
+    caption(['c5', 'c6'], [36.55, 39.3, 41.75], t);
+    const inn = out3(prog(t, 36.5, 36.9)), leave = prog(t, 41.7, 42);
+    const toView = out3(prog(t, 38.55, 38.85));
+    $('dlist').style.opacity = inn * (1 - toView) * (1 - leave);
+    $('dlist').style.transform = `translateY(${(1 - inn) * 40}px) scale(${1 - toView * .03})`;
+    $('dview').style.opacity = toView * (1 - leave);
+    $('dview').style.transform = `scale(${.97 + .03 * toView})`;
+    [0, 1, 2, 3, 4].forEach((i) => {
+      const x = out3(prog(t, 36.7 + i * .1, 37.0 + i * .1));
+      $('di' + i).style.opacity = x; $('di' + i).style.transform = `translateY(${(1 - x) * 20}px)`;
+    });
+    $('di1').classList.toggle('hot', t >= 38.0);
+    const c = $('cursor7'), cv = t >= 37.6 && t < 38.6;
+    c.style.display = cv ? 'block' : 'none';
+    const m = inout(prog(t, 37.65, 38.2));
+    c.style.transform = `translate(${lerp(1500, 1180, m)}px, ${lerp(900, 452, m)}px) scale(${t > 38.3 && t < 38.45 ? .88 : 1})`;
+  }
+
+  // 8. One draft, every AI: 42 - 48 s
+  const s8 = t >= 42 && t < 48; show($('s8'), s8);
+  if (s8) {
+    caption(['c7', 'c8'], [42.05, 45.2, 47.75], t);
+    const inn = out3(prog(t, 42, 42.4)), leave = prog(t, 47.7, 48);
+    document.querySelectorAll('#s8 .mdraft, #s8 .smenu, #s8 .tgt').forEach((e) => { e.style.opacity = inn * (1 - leave); });
+    const SENDS = [[43.0, 'sr0', 'tg0'], [44.5, 'sr1', 'tg1'], [46.0, 'sr2', 'tg2']];
+    const cur = $('cursor8');
+    cur.style.display = t >= 42.5 && t < 47.6 ? 'block' : 'none';
+    let cx = 520, cy = 1000;
+    SENDS.forEach(([a, row, tg], i) => {
+      const r = $(row), rr = { x: 90 + 300, y: 548 + 10 + 34 + i * 74 };
+      if (t >= a - .5) { const m = inout(prog(t, a - .5, a - .05)); const px = i ? 90 + 300 : 520, py = i ? 548 + 10 + 34 + (i - 1) * 74 : 1000; cx = lerp(px, rr.x, m); cy = lerp(py, rr.y, m); }
+      r.classList.toggle('on', t >= a && t < a + .9);
+      r.querySelector('.ok').style.opacity = prog(t, a + .6, a + .7);
+      const f = $('fl' + i), fp = inout(prog(t, a + .05, a + .6));
+      f.style.display = t >= a + .05 && t < a + .62 ? 'block' : 'none';
+      const g = $(tg), gx = parseFloat(g.style.left) + 30, gy = parseFloat(g.style.top) + 70;
+      f.style.transform = `translate(${lerp(110, gx, fp)}px, ${lerp(320, gy, fp)}px) scale(${lerp(1, .8, fp)})`;
+      const rx = $('rx' + i), rin = out3(prog(t, a + .55, a + .8));
+      rx.style.opacity = rin; rx.style.transform = `translateY(${(1 - rin) * 14}px)`;
+      $('sp' + i).style.opacity = prog(t, a + .8, a + .9);
+    });
+    cur.style.transform = `translate(${cx}px, ${cy}px) scale(${SENDS.some(([a]) => t > a - .05 && t < a + .1) ? .88 : 1})`;
+  }
+
+  t = T - 24;     // the end card keeps its original timings, 24 s later
   // 6. End card: 24 - 30 s
   const s6 = t >= 24; show($('s6'), s6);
   if (s6) {
