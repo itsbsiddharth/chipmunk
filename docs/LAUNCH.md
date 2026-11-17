@@ -1,6 +1,15 @@
 # Launch kit
 
-Launch on X: **Wednesday 18 November 2026, 8:00-8:30 pm India time** (9:30-10 am US East, the busiest hour for tech X). Everything here can be reused for later posts.
+Launch on X: **Tuesday 17 November 2026, about 9:30-10 pm India time** (11-11:30 am US East). Then one new post a day, each a different angle, never the same launch post twice:
+
+| When (India time) | Post |
+| --- | --- |
+| Tue 17 Nov, ~9:30 pm | The launch: main video + thread (below) |
+| Wed 18 Nov, 8:00-8:30 pm | Quote the launch post with `clip-old-way.mp4` (the pain) |
+| Thu 19 Nov, 8:00-8:30 pm | A new post: "Half-written prompts finally have a home" with `clip-drafts.mp4`, link in a reply. Show HN at ~9:30 pm. |
+| Fri 20 Nov | "One draft, every AI" with `clip-every-ai.mp4`; Reddit |
+
+Everything here can be reused for later posts.
 
 ## The message
 
@@ -79,7 +88,7 @@ Upload the video directly (not a link). Keep the link out of the main post: X sh
 
 > It's v1.4 and I'm shipping fast. What would make it part of your day? I'll build the best idea this week.
 
-**Thursday morning, quote your main post** (attach `clip-old-way.mp4`):
+**Wednesday evening, quote your main post** (attach `clip-old-way.mp4`):
 
 > Screenshot. Alt+Tab. Paste. Explain. Repeat.
 >
