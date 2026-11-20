@@ -1,0 +1,4 @@
+# Git deploys only need the website. Skip the app source, videos and docs.
+/*
+!/site
+!/vercel.json
