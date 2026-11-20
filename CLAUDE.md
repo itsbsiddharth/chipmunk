@@ -4,7 +4,7 @@ Chipmunk is a free, open-source app for Windows, with a Mac beta (by Siddharth, 
 
 ## Live things
 
-- Website: https://chipmunk.bsid.dev (Vercel project `chipmunk`, team `bakki`, source in `site/`). https://chipmunk-zeta.vercel.app redirects to it (site/vercel.json), so only the real domain ever shows. Short links in `site/vercel.json`: /download, /download/zip, /github, /releases.
+- Website: https://chipmunk.bsid.dev (Vercel project `chipmunk`, team `bakki`, source in `site/`). https://chipmunk-zeta.vercel.app redirects to it, so only the real domain ever shows. All site config (serve `site/`, redirects, short links /download, /download/mac, /download/zip, /github, /releases, headers) lives in the one root `vercel.json`; `.vercelignore` uploads only `site/`. Never add a second vercel.json.
 - Short link from the personal site: https://bsid.dev/chipmunk (redirect in the bsid.dev repo's vercel.json).
 - Repo: https://github.com/itsbsiddharth/chipmunk. Releases carry `Chipmunk-Setup.exe` and `Chipmunk-win-x64.zip`. The website links to `releases/latest/download/Chipmunk-Setup.exe`, so the newest release is always what people get.
 - DNS for bsid.dev is at name.com (the user manages it). `chipmunk` is a CNAME to `64d6a008e962d52a.vercel-dns-017.com`.
@@ -39,7 +39,7 @@ Chipmunk is a free, open-source app for Windows, with a Mac beta (by Siddharth, 
 - Test safely with an isolated profile: `Chipmunk.exe --profile <folder> --background` keeps settings and drafts apart from the user's. Turn Chip off in test profiles (`"showPet":false` in that profile's settings.json) so only one chipmunk shows on screen.
 - Setup flags for testing: `--dir <folder> --no-shortcuts --no-launch`. `--update` is what the in-app updater uses.
 - Release: `gh release create vX.Y.Z release\Chipmunk-Setup.exe release\Chipmunk-win-x64.zip --title "Chipmunk X.Y" --notes-file release\notes.md`. Installed copies see it within a day and offer the update.
-- Website deploy: from `site/`, `npx vercel@latest deploy --prod --yes` (already linked; the custom domain follows automatically).
+- Website deploy: automatic. Every push to `main` deploys to production. To deploy by hand, run `npx vercel@latest deploy --prod --yes` from the repo root (linked in `.vercel/`), never from `site/`.
 
 ## Known gaps
 
